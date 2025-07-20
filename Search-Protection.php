@@ -1,12 +1,16 @@
 <?php
 /**
- * Plugin Name:       Search Protection
- * Description:       Lindungi form pencarian dari spam dan karakter berbahaya dengan daftar hitam dan reCAPTCHA v3.
- * Version:           1.1.1
- * Author:            <a href="https://msp.web.id" target="_blank">Hilfan</a>, <a href="https://telkomuniversity.ac.id" target="_blank">Telkom University</a>
- * License:           GPL2
+ * Plugin Name: Search Protection
+ * Plugin URI: https://github.com/hilfans/search-protection-wordpress
+ * Description: Lindungi form pencarian dari spam dan karakter berbahaya dengan daftar hitam dan reCAPTCHA v3.
+ * Version: 1.1.1
  * Requires at least: 5.0
- * Requires PHP:      7.2
+ * Requires PHP: 7.2
+ * Author: <a href="https://msp.web.id" target="_blank">Hilfan</a>, <a href="https://telkomuniversity.ac.id" target="_blank">Telkom University</a>
+ * Author URI:  https://msp.web.id/
+ * License: GPLv2 or later
+ * License URI:  https://www.gnu.org/licenses/gpl-2.0.html
+ * Text Domain: search-protection
  */
 
 if (!defined('ABSPATH')) exit; // Exit if accessed directly
