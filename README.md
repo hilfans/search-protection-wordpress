@@ -76,4 +76,4 @@ Halaman pengaturan yang lengkap.
 Sistem logging dan pembersihan log otomatis via Cron Job.
 
 Lisensi
-Plugin ini dirilis di bawah lisensi GPLv2. Lihat file LICENSE untuk detailnya.
+Plugin ini dirilis di bawah lisensi GPLv2. Lihat file LICENSE untuk detailnya. Dan dengan dukungan Telkom University
