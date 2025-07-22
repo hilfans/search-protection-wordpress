@@ -3,7 +3,7 @@
  * Plugin Name: Search Protection
  * Plugin URI: https://github.com/hilfans/search-protection-wordpress
  * Description: Lindungi form pencarian dari spam dan karakter berbahaya dengan daftar hitam dan reCAPTCHA v3.
- * Version: 1.3.0
+ * Version: 1.3.1
  * Requires at least: 5.0
  * Requires PHP: 7.2
  * Author: <a href="https://msp.web.id" target="_blank">Hilfan</a>, <a href="https://telkomuniversity.ac.id" target="_blank">Telkom University</a>
@@ -259,3 +259,240 @@ class TelU_Search_Protection_Full {
     public function process_settings_actions() {
         if (empty($_POST['telu_sp_action'])) {
             return;
+        }
+
+        if ($_POST['telu_sp_action'] == 'export_settings') {
+            if (!isset($_POST['telu_sp_export_nonce_field']) || !wp_verify_nonce($_POST['telu_sp_export_nonce_field'], 'telu_sp_export_nonce')) {
+                wp_die('Pemeriksaan keamanan gagal!');
+            }
+            $this->export_settings();
+        }
+
+        if ($_POST['telu_sp_action'] == 'import_settings') {
+            if (!isset($_POST['telu_sp_import_nonce_field']) || !wp_verify_nonce($_POST['telu_sp_import_nonce_field'], 'telu_sp_import_nonce')) {
+                wp_die('Pemeriksaan keamanan gagal!');
+            }
+            $this->import_settings();
+        }
+    }
+
+    private function export_settings() {
+        if (!current_user_can('manage_options')) return;
+
+        $settings = get_option($this->option_name);
+        if (empty($settings)) $settings = $this->get_default_settings();
+
+        $filename = 'search-protection-settings-backup-' . date('Y-m-d') . '.json';
+        
+        header('Content-Type: application/json');
+        header('Content-Disposition: attachment; filename=' . $filename);
+        
+        ob_clean();
+        flush();
+        
+        echo json_encode($settings, JSON_PRETTY_PRINT);
+        exit;
+    }
+
+    private function import_settings() {
+        if (!current_user_can('manage_options')) return;
+
+        if (empty($_FILES['import_file']['tmp_name'])) {
+            add_settings_error('telu_search_protection_notices', 'import_error', 'Tidak ada file yang dipilih untuk diimpor.', 'error');
+            return;
+        }
+
+        $file = $_FILES['import_file'];
+
+        if ($file['error'] !== UPLOAD_ERR_OK) {
+            add_settings_error('telu_search_protection_notices', 'import_error', 'Terjadi kesalahan saat mengunggah file.', 'error');
+            return;
+        }
+
+        $extension = pathinfo($file['name'], PATHINFO_EXTENSION);
+        if ($extension !== 'json') {
+            add_settings_error('telu_search_protection_notices', 'import_error', 'File tidak valid. Harap unggah file cadangan .json yang benar.', 'error');
+            return;
+        }
+
+        $content = file_get_contents($file['tmp_name']);
+        $imported_settings = json_decode($content, true);
+
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            add_settings_error('telu_search_protection_notices', 'import_error', 'Gagal membaca file cadangan. File JSON tidak valid.', 'error');
+            return;
+        }
+        
+        $sanitized_settings = $this->sanitize_settings($imported_settings);
+        update_option($this->option_name, $sanitized_settings);
+
+        add_settings_error('telu_search_protection_notices', 'import_success', 'Pengaturan berhasil diimpor dan disimpan.', 'success');
+    }
+
+    public function create_log_table() {
+        global $wpdb;
+        $charset_collate = $wpdb->get_charset_collate();
+        $sql = "CREATE TABLE IF NOT EXISTS {$this->log_table} (
+            id BIGINT(20) NOT NULL AUTO_INCREMENT,
+            search_term TEXT NOT NULL,
+            blocked_reason VARCHAR(255) NOT NULL,
+            user_ip VARCHAR(100) NOT NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (id)
+        ) $charset_collate;";
+        require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
+        dbDelta($sql);
+    }
+
+    public function do_daily_log_cleanup() {
+        global $wpdb;
+        $wpdb->query("DELETE FROM {$this->log_table} WHERE created_at < NOW() - INTERVAL 1 DAY");
+    }
+
+    public function intercept_search_query($query) {
+        if (is_admin() || !$query->is_main_query() || !$query->is_search()) {
+            return;
+        }
+
+        $search_query = trim($query->get('s'));
+        if (empty($search_query)) {
+            return;
+        }
+
+        $options = wp_parse_args(get_option($this->option_name), $this->get_default_settings());
+        
+        $blacklist_raw = $options['blacklist'] ?? '';
+        if (!empty($blacklist_raw)) {
+            $blacklist = array_map('trim', explode(',', $blacklist_raw));
+            foreach ($blacklist as $term) {
+                if (empty($term)) continue;
+                if (substr($term, 0, 1) == '/' && substr($term, -1) == '/') {
+                    if (@preg_match($term, $search_query)) {
+                        $this->block_request($options['msg_regex'], 'Regex Block');
+                    }
+                } else {
+                    if (stripos($search_query, $term) !== false) {
+                        $this->block_request($options['msg_badword'], 'Badword Block');
+                    }
+                }
+            }
+        }
+
+        if (!empty($options['enable_recaptcha']) && $options['enable_recaptcha'] === '1') {
+            $secret_key = $options['secret_key'] ?? '';
+            $token = $_POST['token'] ?? $_GET['token'] ?? '';
+
+            if (empty($secret_key)) return;
+            if (empty($token)) {
+                $this->block_request($options['msg_recaptcha_fail'], 'No reCAPTCHA Token');
+            }
+
+            $response = wp_remote_post('https://www.google.com/recaptcha/api/siteverify', [
+                'body' => ['secret' => $secret_key, 'response' => $token, 'remoteip' => $_SERVER['REMOTE_ADDR']]
+            ]);
+
+            if (is_wp_error($response)) {
+                 $this->block_request('Gagal menghubungi server reCAPTCHA.', 'reCAPTCHA API Error');
+            }
+
+            $result = json_decode(wp_remote_retrieve_body($response), true);
+            if (empty($result['success']) || $result['score'] < 0.5) {
+                $this->block_request($options['msg_recaptcha_fail'], 'reCAPTCHA Failed');
+            }
+        }
+    }
+    
+    public function add_recaptcha_script() {
+        $options = wp_parse_args(get_option($this->option_name), $this->get_default_settings());
+
+        if (empty($options['enable_recaptcha']) || $options['enable_recaptcha'] !== '1' || empty($options['site_key'])) {
+            return;
+        }
+        $site_key = $options['site_key'];
+        ?>
+        <script src="https://www.google.com/recaptcha/api.js?render=<?php echo esc_attr($site_key); ?>"></script>
+        <script id="search-protection-recaptcha-script">
+            document.addEventListener('DOMContentLoaded', function() {
+                const searchForms = document.querySelectorAll('form[role="search"], form.search-form, form[action*="/?s="]');
+                searchForms.forEach(form => {
+                    form.addEventListener('submit', function(e) {
+                        if (form.dataset.recaptchaAttempted) {
+                            return;
+                        }
+
+                        e.preventDefault();
+                        form.dataset.recaptchaAttempted = 'true';
+
+                        if (typeof grecaptcha === 'undefined' || typeof grecaptcha.execute === 'undefined') {
+                            console.error('Search Protection: reCAPTCHA script not loaded correctly.');
+                            form.submit();
+                            return;
+                        }
+
+                        grecaptcha.ready(() => {
+                            grecaptcha.execute('<?php echo esc_js($site_key); ?>', { action: 'search' }).then(token => {
+                                const existingToken = form.querySelector('input[name="token"]');
+                                if (existingToken) {
+                                    existingToken.remove();
+                                }
+                                const tokenInput = document.createElement('input');
+                                tokenInput.type = 'hidden';
+                                tokenInput.name = 'token';
+                                tokenInput.value = token;
+                                form.appendChild(tokenInput);
+                                form.submit();
+                            }).catch(error => {
+                                console.error('Search Protection: reCAPTCHA execution error.', error);
+                                form.submit();
+                            });
+                        });
+                    });
+                });
+            });
+        </script>
+        <?php
+    }
+
+    private function block_request($message, $reason) {
+        global $wpdb;
+        $search_query = $_GET['s'] ?? '';
+        $user_ip = $_SERVER['REMOTE_ADDR'] ?? 'UNKNOWN';
+
+        $wpdb->insert($this->log_table, [
+            'search_term'    => sanitize_text_field($search_query),
+            'blocked_reason' => sanitize_text_field($reason),
+            'user_ip'        => sanitize_text_field($user_ip)
+        ]);
+
+        $options = wp_parse_args(get_option($this->option_name), $this->get_default_settings());
+        $block_page_url = $options['block_page_url'] ?? '';
+        
+        if (!empty($block_page_url) && filter_var($block_page_url, FILTER_VALIDATE_URL)) {
+            wp_redirect(esc_url_raw($block_page_url));
+            exit;
+        }
+        
+        $homepage_url = home_url('/');
+        $full_message = sprintf(
+            '%s<p><a href="%s">&laquo; Kembali ke Beranda</a></p>',
+            esc_html($message),
+            esc_url($homepage_url)
+        );
+
+        wp_die($full_message, 'Pencarian Diblokir', ['response' => 403]);
+    }
+
+    public function admin_notices() {
+        $screen = get_current_screen();
+        if ($screen && $screen->id === 'settings_page_telu-search-protection') {
+            echo '<div class="notice notice-info is-dismissible"><p>Pastikan Anda telah mendaftarkan domain Anda di <a href="https://www.google.com/recaptcha/admin" target="_blank">Google reCAPTCHA (v3)</a> untuk mendapatkan Site Key dan Secret Key.</p></div>';
+            
+            $options = wp_parse_args(get_option($this->option_name), $this->get_default_settings());
+            if (!empty($options['enable_recaptcha']) && (empty($options['site_key']) || empty($options['secret_key']))) {
+                 echo '<div class="notice notice-warning is-dismissible"><p><strong>Peringatan:</strong> reCAPTCHA diaktifkan, tetapi Site Key atau Secret Key belum diisi. Fitur reCAPTCHA tidak akan berfungsi.</p></div>';
+            }
+        }
+    }
+}
+
+new TelU_Search_Protection_Full();
