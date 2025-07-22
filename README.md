@@ -77,3 +77,16 @@ Sistem logging dan pembersihan log otomatis via Cron Job.
 
 Lisensi
 Plugin ini dirilis di bawah lisensi GPLv2. Lihat file LICENSE untuk detailnya. Dan dengan dukungan Telkom University
+
+## Changelog
+
+### 1.2.0 (22 Juli 2025)
+* **Fitur Baru:** Menambahkan panel "Informasi Kata Kunci Terblokir" di halaman pengaturan. Panel ini menampilkan daftar kata kunci yang paling sering diblokir dalam 24 jam terakhir.
+* **Peningkatan:** Memudahkan admin untuk menyalin kata kunci yang terdeteksi untuk ditambahkan ke daftar terlarang.
+
+### 1.1.1 (20 Juli 2025)
+* Rilis awal plugin.
+* Fitur pemblokiran kata kunci dan regex.
+* Integrasi Google reCAPTCHA v3.
+* Halaman pengaturan yang lengkap.
+* Sistem logging dan pembersihan log otomatis via Cron Job.
