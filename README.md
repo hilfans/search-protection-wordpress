@@ -65,6 +65,10 @@ Klik Save Changes.
 
 ## Changelog
 
+### 1.3.0 (22 Juli 2025)
+* **Fitur Baru:** Menambahkan fungsionalitas untuk mencadangkan (ekspor) dan memulihkan (impor) seluruh pengaturan plugin.
+* **Fitur Baru:** Menambahkan opsi di halaman pengaturan untuk secara otomatis menghapus semua data (pengaturan dan log) saat plugin dihapus (uninstall), untuk kebersihan database.
+
 ### 1.2.3 (22 Juli 2025)
 * **Perbaikan Bug:** Memperbaiki fatal error pada PHP (`TypeError: array_merge()`) yang dapat terjadi saat plugin pertama kali diaktifkan. Kini menggunakan `wp_parse_args` untuk penanganan opsi default yang lebih aman dan sesuai standar WordPress.
 
