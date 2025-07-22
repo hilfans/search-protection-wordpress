@@ -3,7 +3,7 @@
  * Plugin Name: Search Protection
  * Plugin URI: https://github.com/hilfans/search-protection-wordpress
  * Description: Lindungi form pencarian dari spam dan karakter berbahaya dengan daftar hitam dan reCAPTCHA v3.
- * Version: 1.3.1
+ * Version: 1.3.0
  * Requires at least: 5.0
  * Requires PHP: 7.2
  * Author: <a href="https://msp.web.id" target="_blank">Hilfan</a>, <a href="https://telkomuniversity.ac.id" target="_blank">Telkom University</a>
@@ -224,6 +224,8 @@ class TelU_Search_Protection_Full {
                     </tr>
                 </table>
 
+                <p><em>Catatan: Log pencarian yang diblokir akan dihapus otomatis setiap 24 jam untuk menjaga performa.</em></p>
+
                 <?php submit_button('Simpan Semua Perubahan'); ?>
             </form>
 
@@ -412,40 +414,44 @@ class TelU_Search_Protection_Full {
         ?>
         <script src="https://www.google.com/recaptcha/api.js?render=<?php echo esc_attr($site_key); ?>"></script>
         <script id="search-protection-recaptcha-script">
-            document.addEventListener('DOMContentLoaded', function() {
-                const searchForms = document.querySelectorAll('form[role="search"], form.search-form, form[action*="/?s="]');
-                searchForms.forEach(form => {
-                    form.addEventListener('submit', function(e) {
-                        if (form.dataset.recaptchaAttempted) {
-                            return;
+            document.addEventListener('submit', function(e) {
+                // Find the form that was submitted
+                const form = e.target.closest('form[role="search"], form.search-form, form[action*="/?s="]');
+
+                // If it's not a search form we care about, do nothing
+                if (!form) {
+                    return;
+                }
+
+                // Check for a flag to prevent infinite loops
+                if (form.dataset.recaptchaAttempted) {
+                    return;
+                }
+
+                e.preventDefault(); // Stop the initial submission
+                form.dataset.recaptchaAttempted = 'true'; // Set the flag
+
+                if (typeof grecaptcha === 'undefined' || typeof grecaptcha.execute === 'undefined') {
+                    console.error('Search Protection: reCAPTCHA script not loaded correctly.');
+                    form.submit();
+                    return;
+                }
+
+                grecaptcha.ready(() => {
+                    grecaptcha.execute('<?php echo esc_js($site_key); ?>', { action: 'search' }).then(token => {
+                        const existingToken = form.querySelector('input[name="token"]');
+                        if (existingToken) {
+                            existingToken.remove();
                         }
-
-                        e.preventDefault();
-                        form.dataset.recaptchaAttempted = 'true';
-
-                        if (typeof grecaptcha === 'undefined' || typeof grecaptcha.execute === 'undefined') {
-                            console.error('Search Protection: reCAPTCHA script not loaded correctly.');
-                            form.submit();
-                            return;
-                        }
-
-                        grecaptcha.ready(() => {
-                            grecaptcha.execute('<?php echo esc_js($site_key); ?>', { action: 'search' }).then(token => {
-                                const existingToken = form.querySelector('input[name="token"]');
-                                if (existingToken) {
-                                    existingToken.remove();
-                                }
-                                const tokenInput = document.createElement('input');
-                                tokenInput.type = 'hidden';
-                                tokenInput.name = 'token';
-                                tokenInput.value = token;
-                                form.appendChild(tokenInput);
-                                form.submit();
-                            }).catch(error => {
-                                console.error('Search Protection: reCAPTCHA execution error.', error);
-                                form.submit();
-                            });
-                        });
+                        const tokenInput = document.createElement('input');
+                        tokenInput.type = 'hidden';
+                        tokenInput.name = 'token';
+                        tokenInput.value = token;
+                        form.appendChild(tokenInput);
+                        form.submit();
+                    }).catch(error => {
+                        console.error('Search Protection: reCAPTCHA execution error.', error);
+                        form.submit();
                     });
                 });
             });
