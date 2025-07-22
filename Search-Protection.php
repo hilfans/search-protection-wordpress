@@ -3,7 +3,7 @@
  * Plugin Name: Search Protection
  * Plugin URI: https://github.com/hilfans/search-protection-wordpress
  * Description: Lindungi form pencarian dari spam dan karakter berbahaya dengan daftar hitam dan reCAPTCHA v3.
- * Version: 1.2.0
+ * Version: 1.2.2
  * Requires at least: 5.0
  * Requires PHP: 7.2
  * Author: <a href="https://msp.web.id" target="_blank">Hilfan</a>, <a href="https://telkomuniversity.ac.id" target="_blank">Telkom University</a>
@@ -101,7 +101,6 @@ class TelU_Search_Protection_Full {
         $options = get_option($this->option_name, $defaults);
         $options = array_merge($defaults, $options);
 
-        // Fetch recent blocked keywords
         global $wpdb;
         $recent_keywords = $wpdb->get_results(
             $wpdb->prepare(
@@ -281,6 +280,9 @@ class TelU_Search_Protection_Full {
         }
     }
     
+    /**
+     * Add the reCAPTCHA v3 JavaScript to the site footer.
+     */
     public function add_recaptcha_script() {
         $options = get_option($this->option_name);
         if (empty($options['enable_recaptcha']) || $options['enable_recaptcha'] !== '1' || empty($options['site_key'])) {
@@ -289,24 +291,41 @@ class TelU_Search_Protection_Full {
         $site_key = $options['site_key'];
         ?>
         <script src="https://www.google.com/recaptcha/api.js?render=<?php echo esc_attr($site_key); ?>"></script>
-        <script>
+        <script id="search-protection-recaptcha-script">
             document.addEventListener('DOMContentLoaded', function() {
                 const searchForms = document.querySelectorAll('form[role="search"], form.search-form, form[action*="/?s="]');
                 searchForms.forEach(form => {
-                    form.addEventListener('submit', e => {
-                        e.preventDefault();
-                        if (form.querySelector('input[name="token"]')) {
-                            form.submit();
+                    form.addEventListener('submit', function(e) {
+                        // Check for a flag to prevent infinite loops
+                        if (form.dataset.recaptchaAttempted) {
                             return;
                         }
+
+                        e.preventDefault(); // Stop the initial submission
+                        form.dataset.recaptchaAttempted = 'true'; // Set the flag
+
+                        // Check if grecaptcha is available
+                        if (typeof grecaptcha === 'undefined' || typeof grecaptcha.execute === 'undefined') {
+                            console.error('Search Protection: reCAPTCHA script not loaded correctly.');
+                            form.submit(); // Submit the form anyway and let the backend handle it.
+                            return;
+                        }
+
                         grecaptcha.ready(() => {
                             grecaptcha.execute('<?php echo esc_js($site_key); ?>', { action: 'search' }).then(token => {
+                                const existingToken = form.querySelector('input[name="token"]');
+                                if (existingToken) {
+                                    existingToken.remove();
+                                }
                                 const tokenInput = document.createElement('input');
                                 tokenInput.type = 'hidden';
                                 tokenInput.name = 'token';
                                 tokenInput.value = token;
                                 form.appendChild(tokenInput);
-                                form.submit();
+                                form.submit(); // Resubmit the form
+                            }).catch(error => {
+                                console.error('Search Protection: reCAPTCHA execution error.', error);
+                                form.submit(); // Resubmit the form anyway
                             });
                         });
                     });
@@ -335,7 +354,14 @@ class TelU_Search_Protection_Full {
             exit;
         }
         
-        wp_die(esc_html($message), 'Pencarian Diblokir', ['response' => 403, 'back_link' => true]);
+        $homepage_url = home_url('/');
+        $full_message = sprintf(
+            '%s<p><a href="%s">&laquo; Kembali ke Beranda</a></p>',
+            esc_html($message),
+            esc_url($homepage_url)
+        );
+
+        wp_die($full_message, 'Pencarian Diblokir', ['response' => 403]);
     }
 
     public function admin_notices() {
