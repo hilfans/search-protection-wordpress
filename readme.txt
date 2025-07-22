@@ -43,8 +43,13 @@ Tidak. Plugin ini sangat ringan. Proses pemblokiran terjadi di sisi server sebel
 == Changelog ==
 
 = 1.3.0 =
-* FITUR BARU: Menambahkan opsi untuk menghapus semua data plugin (pengaturan dan log) saat plugin di-uninstall.
-* FITUR BARU: Menambahkan fungsionalitas untuk mencadangkan (ekspor) dan memulihkan (impor) semua pengaturan plugin melalui file .json.
+* FITUR: Menambahkan opsi untuk menghapus semua data plugin (pengaturan dan log) saat plugin di-uninstall.
+* FITUR: Menambahkan fungsionalitas untuk mencadangkan (ekspor) dan memulihkan (impor) semua pengaturan plugin.
+* PERBAIKAN: Mengatasi bug kritis di mana skrip reCAPTCHA tidak berfungsi pada tampilan mobile atau pada form yang dimuat secara dinamis.
+* PERBAIKAN: Mengatasi error fatal PHP yang terjadi saat plugin diaktifkan pertama kali.
+* PERBAIKAN: Mengubah tautan "Back" pada halaman blokir agar selalu mengarah ke beranda situs.
+* PENINGKATAN: Mengembalikan teks informasi tentang penghapusan log otomatis di halaman pengaturan.
+
 
 = 1.2.3 =
 * PERBAIKAN: Mengatasi error fatal PHP (`TypeError: array_merge()`) yang terjadi saat plugin diaktifkan pertama kali sebelum pengaturan disimpan. Menggunakan `wp_parse_args()` untuk penanganan default yang lebih aman.
