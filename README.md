@@ -63,22 +63,13 @@ Jika Anda ingin mengalihkan pengguna ke halaman lain saat diblokir, masukkan URL
 
 Klik Save Changes.
 
-Changelog
-1.1.1 (20 Juli 2025)
-Rilis awal plugin.
-
-Fitur pemblokiran kata kunci dan regex.
-
-Integrasi Google reCAPTCHA v3.
-
-Halaman pengaturan yang lengkap.
-
-Sistem logging dan pembersihan log otomatis via Cron Job.
-
-Lisensi
-Plugin ini dirilis di bawah lisensi GPLv2. Lihat file LICENSE untuk detailnya. Dan dengan dukungan Telkom University
-
 ## Changelog
+
+### 1.2.2 (22 Juli 2025)
+* **Perbaikan Bug:** Memperbaiki masalah pada skrip JavaScript yang menyebabkan formulir pencarian bawaan WordPress tidak berfungsi saat reCAPTCHA diaktifkan. Skrip kini lebih tangguh dan memastikan formulir tetap dapat dikirim meskipun reCAPTCHA gagal dimuat.
+
+### 1.2.1 (22 Juli 2025)
+* **Perbaikan:** Tombol "« Back" pada halaman yang diblokir kini secara konsisten mengarah ke halaman utama (beranda) untuk pengalaman pengguna yang lebih baik.
 
 ### 1.2.0 (22 Juli 2025)
 * **Fitur Baru:** Menambahkan panel "Informasi Kata Kunci Terblokir" di halaman pengaturan. Panel ini menampilkan daftar kata kunci yang paling sering diblokir dalam 24 jam terakhir.
