@@ -67,7 +67,11 @@ Klik Save Changes.
 
 ### 1.3.0 (22 Juli 2025)
 * **Fitur Baru:** Menambahkan fungsionalitas untuk mencadangkan (ekspor) dan memulihkan (impor) seluruh pengaturan plugin.
-* **Fitur Baru:** Menambahkan opsi di halaman pengaturan untuk secara otomatis menghapus semua data (pengaturan dan log) saat plugin dihapus (uninstall), untuk kebersihan database.
+* **Fitur Baru:** Menambahkan opsi di halaman pengaturan untuk secara otomatis menghapus semua data saat plugin dihapus.
+* **Perbaikan Bug Kritis:** Memperbaiki masalah pada skrip JavaScript yang menyebabkan reCAPTCHA tidak berfungsi pada tampilan mobile atau pada formulir yang dimuat secara dinamis.
+* **Perbaikan Bug:** Memperbaiki fatal error pada PHP yang dapat terjadi saat plugin pertama kali diaktifkan.
+* **Perbaikan:** Tombol "« Back" pada halaman yang diblokir kini secara konsisten mengarah ke halaman utama.
+* **Peningkatan:** Mengembalikan catatan penting tentang penghapusan log otomatis setiap 24 jam di halaman pengaturan.
 
 ### 1.2.3 (22 Juli 2025)
 * **Perbaikan Bug:** Memperbaiki fatal error pada PHP (`TypeError: array_merge()`) yang dapat terjadi saat plugin pertama kali diaktifkan. Kini menggunakan `wp_parse_args` untuk penanganan opsi default yang lebih aman dan sesuai standar WordPress.
