@@ -42,10 +42,13 @@ Tidak. Plugin ini sangat ringan. Proses pemblokiran terjadi di sisi server sebel
 
 == Changelog ==
 
+= 1.2.0 =
+* FITUR: Menambahkan panel informasi di halaman pengaturan untuk menampilkan kata kunci yang terblokir dalam 24 jam terakhir.
+* PENINGKATAN: Memudahkan admin menyalin kata kunci yang sering diblokir untuk dimasukkan ke daftar hitam.
+
 = 1.1.1 =
 * Rilis awal plugin.
 * Fitur pemblokiran kata kunci dan ekspresi reguler (regex).
 * Integrasi Google reCAPTCHA v3.
 * Halaman pengaturan yang lengkap dan mudah digunakan.
 * Sistem logging dan pembersihan log otomatis via Cron Job WordPress.
-
