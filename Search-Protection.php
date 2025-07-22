@@ -32,7 +32,6 @@ class TelU_Search_Protection_Full {
         add_action('admin_notices', [$this, 'admin_notices']);
         add_action('admin_init', [$this, 'process_settings_actions']);
 
-
         // Activation, Deactivation, and Cron Hooks
         register_activation_hook(__FILE__, [$this, 'activate']);
         register_deactivation_hook(__FILE__, [$this, 'deactivate']);
@@ -127,19 +126,99 @@ class TelU_Search_Protection_Full {
             <p>Plugin ini membantu melindungi form pencarian Anda dari kata-kata yang tidak diinginkan dan spam menggunakan reCAPTCHA v3.</p>
 
             <h2>Informasi Kata Kunci Terblokir (24 Jam Terakhir)</h2>
+            <p>Berikut adalah kata kunci yang paling sering diblokir dalam 24 jam terakhir.</p>
+            
+            <?php if (!empty($recent_keywords)): ?>
+                <div style="background: #fff; border: 1px solid #ccd0d4; padding: 15px; margin-bottom: 20px; border-radius: 4px;">
+                    <?php
+                    $keywords_to_copy = implode(', ', array_map(function($item) {
+                        return $item->search_term;
+                    }, $recent_keywords));
+                    ?>
+                    <label for="recent_keywords_textarea" style="font-weight: bold; display: block; margin-bottom: 5px;">Salin Kata Kunci:</label>
+                    <textarea id="recent_keywords_textarea" readonly rows="3" class="large-text" onclick="this.select();"><?php echo esc_textarea($keywords_to_copy); ?></textarea>
+                    <p class="description">Klik di dalam area teks di atas, lalu salin (Ctrl+C atau Cmd+C) dan tempel ke daftar terlarang di bawah.</p>
+                    
+                    <h3 style="margin-top: 20px; margin-bottom: 10px; border-bottom: 1px solid #eee; padding-bottom: 5px;">Rincian:</h3>
+                    <ul style="margin-left: 20px; list-style-type: disc;">
+                        <?php foreach ($recent_keywords as $keyword): ?>
+                            <li><strong><?php echo esc_html($keyword->search_term); ?></strong> (diblokir <?php echo esc_html($keyword->count); ?> kali)</li>
+                        <?php endforeach; ?>
+                    </ul>
+                </div>
+            <?php else: ?>
+                <div style="background: #fff; border: 1px solid #ccd0d4; padding: 15px; margin-bottom: 20px; border-radius: 4px;">
+                    <p>Tidak ada aktivitas pemblokiran kata kunci yang tercatat dalam 24 jam terakhir.</p>
+                </div>
+            <?php endif; ?>
+
             <form method="post" action="options.php">
                 <?php settings_fields('telu_search_protection_group'); ?>
 
                 <h2>Pengaturan reCAPTCHA v3</h2>
+                <table class="form-table">
+                    <tr valign="top">
+                        <th scope="row">Aktifkan reCAPTCHA</th>
+                        <td>
+                            <input type="checkbox" id="enable_recaptcha" name="<?php echo esc_attr($this->option_name); ?>[enable_recaptcha]" value="1" <?php checked('1', $options['enable_recaptcha']); ?>>
+                            <label for="enable_recaptcha">Aktifkan verifikasi reCAPTCHA pada form pencarian.</label>
+                        </td>
+                    </tr>
+                    <tr valign="top">
+                        <th scope="row"><label for="site_key">Site Key</label></th>
+                        <td><input type="text" id="site_key" name="<?php echo esc_attr($this->option_name); ?>[site_key]" value="<?php echo esc_attr($options['site_key']); ?>" class="regular-text"></td>
+                    </tr>
+                    <tr valign="top">
+                        <th scope="row"><label for="secret_key">Secret Key</label></th>
+                        <td><input type="text" id="secret_key" name="<?php echo esc_attr($this->option_name); ?>[secret_key]" value="<?php echo esc_attr($options['secret_key']); ?>" class="regular-text"></td>
+                    </tr>
+                </table>
+
                 <h2>Pengaturan Pemblokiran Kata</h2>
+                <table class="form-table">
+                     <tr valign="top">
+                        <th scope="row"><label for="blacklist">Daftar Kata/Pola Terlarang</label></th>
+                        <td>
+                            <textarea id="blacklist" name="<?php echo esc_attr($this->option_name); ?>[blacklist]" rows="5" class="large-text"><?php echo esc_textarea($options['blacklist']); ?></textarea>
+                            <p class="description">
+                                Pisahkan setiap kata atau pola dengan koma. <br>
+                                - Untuk kata biasa: <code>spam, judi, test</code><br>
+                                - Untuk ekspresi reguler (regex), apit dengan garis miring: <code>/^[a-z]+$/</code>, <code>/[^\x20-\x7E]/</code>
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+
                 <h2>Pengaturan Pesan & Pengalihan</h2>
+                <table class="form-table">
+                    <tr valign="top">
+                        <th scope="row"><label for="msg_recaptcha_fail">Pesan Gagal reCAPTCHA</label></th>
+                        <td><input type="text" id="msg_recaptcha_fail" name="<?php echo esc_attr($this->option_name); ?>[msg_recaptcha_fail]" value="<?php echo esc_attr($options['msg_recaptcha_fail']); ?>" class="regular-text"></td>
+                    </tr>
+                    <tr valign="top">
+                        <th scope="row"><label for="msg_badword">Pesan Kata Terlarang</label></th>
+                        <td><input type="text" id="msg_badword" name="<?php echo esc_attr($this->option_name); ?>[msg_badword]" value="<?php echo esc_attr($options['msg_badword']); ?>" class="regular-text"></td>
+                    </tr>
+                    <tr valign="top">
+                        <th scope="row"><label for="msg_regex">Pesan Pola Terlarang (Regex)</label></th>
+                        <td><input type="text" id="msg_regex" name="<?php echo esc_attr($this->option_name); ?>[msg_regex]" value="<?php echo esc_attr($options['msg_regex']); ?>" class="regular-text"></td>
+                    </tr>
+                    <tr valign="top">
+                        <th scope="row"><label for="block_page_url">URL Halaman Blokir Kustom</label></th>
+                        <td>
+                            <input type="url" id="block_page_url" name="<?php echo esc_attr($this->option_name); ?>[block_page_url]" value="<?php echo esc_attr($options['block_page_url']); ?>" class="regular-text" placeholder="https://domain.com/blocked">
+                            <p class="description">Jika diisi, pengguna akan dialihkan ke URL ini saat pencarian diblokir. Jika kosong, pesan akan ditampilkan.</p>
+                        </td>
+                    </tr>
+                </table>
+
                 <h2>Manajemen Data</h2>
                 <table class="form-table">
                     <tr valign="top">
                         <th scope="row">Hapus Data Saat Uninstall</th>
                         <td>
                             <input type="checkbox" id="delete_on_uninstall" name="<?php echo esc_attr($this->option_name); ?>[delete_on_uninstall]" value="1" <?php checked('1', $options['delete_on_uninstall']); ?>>
-                            <label for="delete_on_uninstall">Centang untuk menghapus semua pengaturan dan log 'Search Protection' saat plugin dihapus dari WordPress.</label>
+                            <label for="delete_on_uninstall">Centang untuk menghapus semua pengaturan dan log 'Search Protection' saat plugin dihapus.</label>
                             <p class="description"><strong>Peringatan:</strong> Tindakan ini tidak dapat diurungkan.</p>
                         </td>
                     </tr>
@@ -151,8 +230,8 @@ class TelU_Search_Protection_Full {
             <hr>
 
             <h2>Cadangkan & Pulihkan Pengaturan</h2>
-            <div style="display: flex; gap: 20px;">
-                <div style="flex: 1;">
+            <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+                <div style="flex: 1; min-width: 300px;">
                     <p>Simpan semua konfigurasi plugin di atas ke dalam sebuah file .json.</p>
                     <form method="post">
                         <input type="hidden" name="telu_sp_action" value="export_settings" />
@@ -160,7 +239,7 @@ class TelU_Search_Protection_Full {
                         <?php submit_button('Cadangkan Pengaturan', 'secondary', 'submit', false); ?>
                     </form>
                 </div>
-                <div style="flex: 1; border-left: 1px solid #ddd; padding-left: 20px;">
+                <div style="flex: 1; min-width: 300px; border-left: 1px solid #ddd; padding-left: 20px;">
                     <p>Pulihkan konfigurasi dari file cadangan. Pengaturan saat ini akan ditimpa.</p>
                     <form method="post" enctype="multipart/form-data">
                         <p>
@@ -176,77 +255,7 @@ class TelU_Search_Protection_Full {
         </div>
         <?php
     }
-
+    
     public function process_settings_actions() {
         if (empty($_POST['telu_sp_action'])) {
             return;
-        }
-
-        if ($_POST['telu_sp_action'] == 'export_settings') {
-            if (!isset($_POST['telu_sp_export_nonce_field']) || !wp_verify_nonce($_POST['telu_sp_export_nonce_field'], 'telu_sp_export_nonce')) {
-                wp_die('Pemeriksaan keamanan gagal!');
-            }
-            $this->export_settings();
-        }
-
-        if ($_POST['telu_sp_action'] == 'import_settings') {
-            if (!isset($_POST['telu_sp_import_nonce_field']) || !wp_verify_nonce($_POST['telu_sp_import_nonce_field'], 'telu_sp_import_nonce')) {
-                wp_die('Pemeriksaan keamanan gagal!');
-            }
-            $this->import_settings();
-        }
-    }
-
-    private function export_settings() {
-        $settings = get_option($this->option_name);
-        if (empty($settings)) $settings = $this->get_default_settings();
-
-        $filename = 'search-protection-settings-backup-' . date('Y-m-d') . '.json';
-        
-        header('Content-Type: application/json');
-        header('Content-Disposition: attachment; filename=' . $filename);
-        
-        ob_clean();
-        flush();
-        
-        echo json_encode($settings, JSON_PRETTY_PRINT);
-        exit;
-    }
-
-    private function import_settings() {
-        if (empty($_FILES['import_file']['tmp_name'])) {
-            add_settings_error('telu_search_protection_notices', 'import_error', 'Tidak ada file yang dipilih untuk diimpor.', 'error');
-            return;
-        }
-
-        $file = $_FILES['import_file'];
-
-        if ($file['error'] !== UPLOAD_ERR_OK) {
-            add_settings_error('telu_search_protection_notices', 'import_error', 'Terjadi kesalahan saat mengunggah file.', 'error');
-            return;
-        }
-
-        $extension = pathinfo($file['name'], PATHINFO_EXTENSION);
-        if ($extension !== 'json') {
-            add_settings_error('telu_search_protection_notices', 'import_error', 'File tidak valid. Harap unggah file cadangan .json yang benar.', 'error');
-            return;
-        }
-
-        $content = file_get_contents($file['tmp_name']);
-        $imported_settings = json_decode($content, true);
-
-        if (json_last_error() !== JSON_ERROR_NONE) {
-            add_settings_error('telu_search_protection_notices', 'import_error', 'Gagal membaca file cadangan. File JSON tidak valid.', 'error');
-            return;
-        }
-        
-        $sanitized_settings = $this->sanitize_settings($imported_settings);
-        update_option($this->option_name, $sanitized_settings);
-
-        add_settings_error('telu_search_protection_notices', 'import_success', 'Pengaturan berhasil diimpor dan disimpan.', 'success');
-    }
-
-    // ... All other existing methods like create_log_table, intercept_search_query, add_recaptcha_script, etc. remain the same ...
-}
-
-new TelU_Search_Protection_Full();
