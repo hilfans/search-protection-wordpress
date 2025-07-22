@@ -3,7 +3,7 @@
  * Plugin Name: Search Protection
  * Plugin URI: https://github.com/hilfans/search-protection-wordpress
  * Description: Lindungi form pencarian dari spam dan karakter berbahaya dengan daftar hitam dan reCAPTCHA v3.
- * Version: 1.1.1
+ * Version: 1.2.0
  * Requires at least: 5.0
  * Requires PHP: 7.2
  * Author: <a href="https://msp.web.id" target="_blank">Hilfan</a>, <a href="https://telkomuniversity.ac.id" target="_blank">Telkom University</a>
@@ -26,7 +26,7 @@ class TelU_Search_Protection_Full {
         // Main Hooks
         add_action('admin_menu', [$this, 'add_settings_page']);
         add_action('admin_init', [$this, 'register_settings']);
-        add_action('pre_get_posts', [$this, 'intercept_search_query']); // Changed hook for better timing
+        add_action('pre_get_posts', [$this, 'intercept_search_query']);
         add_action('wp_footer', [$this, 'add_recaptcha_script']);
         add_filter('plugin_action_links_' . plugin_basename(__FILE__), [$this, 'plugin_settings_link']);
         add_action('admin_notices', [$this, 'admin_notices']);
@@ -37,9 +37,6 @@ class TelU_Search_Protection_Full {
         add_action('telu_daily_log_cleanup_event', [$this, 'do_daily_log_cleanup']);
     }
 
-    /**
-     * Plugin activation tasks.
-     */
     public function activate() {
         $this->create_log_table();
         if (!wp_next_scheduled('telu_daily_log_cleanup_event')) {
@@ -47,25 +44,16 @@ class TelU_Search_Protection_Full {
         }
     }
 
-    /**
-     * Plugin deactivation tasks.
-     */
     public function deactivate() {
         wp_clear_scheduled_hook('telu_daily_log_cleanup_event');
     }
 
-    /**
-     * Add a settings link to the plugins page.
-     */
     public function plugin_settings_link($links) {
         $settings_link = '<a href="options-general.php?page=telu-search-protection">Settings</a>';
         array_unshift($links, $settings_link);
         return $links;
     }
 
-    /**
-     * Add the plugin settings page to the admin menu.
-     */
     public function add_settings_page() {
         add_options_page(
             'Search Protection Settings',
@@ -76,9 +64,6 @@ class TelU_Search_Protection_Full {
         );
     }
 
-    /**
-     * Register plugin settings.
-     */
     public function register_settings() {
         register_setting(
             'telu_search_protection_group',
@@ -87,9 +72,6 @@ class TelU_Search_Protection_Full {
         );
     }
     
-    /**
-     * Sanitize settings before saving.
-     */
     public function sanitize_settings($input) {
         $new_input = [];
         $new_input['enable_recaptcha'] = isset($input['enable_recaptcha']) ? '1' : '0';
@@ -103,10 +85,6 @@ class TelU_Search_Protection_Full {
         return $new_input;
     }
 
-
-    /**
-     * Render the settings page HTML.
-     */
     public function settings_page_html() {
         if (!current_user_can('manage_options')) return;
 
@@ -121,14 +99,49 @@ class TelU_Search_Protection_Full {
             'block_page_url' => ''
         ];
         $options = get_option($this->option_name, $defaults);
-        // Ensure all keys from defaults exist in options
         $options = array_merge($defaults, $options);
+
+        // Fetch recent blocked keywords
+        global $wpdb;
+        $recent_keywords = $wpdb->get_results(
+            $wpdb->prepare(
+                "SELECT search_term, COUNT(*) as count FROM {$this->log_table} WHERE created_at >= %s GROUP BY search_term ORDER BY count DESC LIMIT 20",
+                date('Y-m-d H:i:s', strtotime('-1 day'))
+            )
+        );
 
         ?>
         <div class="wrap">
             <h1>Search Protection Settings</h1>
             <p>Plugin ini membantu melindungi form pencarian Anda dari kata-kata yang tidak diinginkan dan spam menggunakan reCAPTCHA v3.</p>
+
+            <h2>Informasi Kata Kunci Terblokir (24 Jam Terakhir)</h2>
+            <p>Berikut adalah kata kunci yang paling sering diblokir dalam 24 jam terakhir. Anda dapat dengan mudah menyalin kata kunci ini dan menambahkannya ke dalam "Daftar Kata/Pola Terlarang" di bawah.</p>
             
+            <?php if (!empty($recent_keywords)): ?>
+                <div style="background: #fff; border: 1px solid #ccd0d4; padding: 15px; margin-bottom: 20px; border-radius: 4px;">
+                    <?php
+                    $keywords_to_copy = implode(', ', array_map(function($item) {
+                        return $item->search_term;
+                    }, $recent_keywords));
+                    ?>
+                    <label for="recent_keywords_textarea" style="font-weight: bold; display: block; margin-bottom: 5px;">Salin Kata Kunci:</label>
+                    <textarea id="recent_keywords_textarea" readonly rows="3" class="large-text" onclick="this.select();"><?php echo esc_textarea($keywords_to_copy); ?></textarea>
+                    <p class="description">Klik di dalam area teks di atas untuk memilih semua kata kunci, lalu salin (Ctrl+C atau Cmd+C) dan tempel ke daftar terlarang di bawah.</p>
+                    
+                    <h3 style="margin-top: 20px; margin-bottom: 10px; border-bottom: 1px solid #eee; padding-bottom: 5px;">Rincian:</h3>
+                    <ul style="margin-left: 20px; list-style-type: disc;">
+                        <?php foreach ($recent_keywords as $keyword): ?>
+                            <li><strong><?php echo esc_html($keyword->search_term); ?></strong> (diblokir <?php echo esc_html($keyword->count); ?> kali)</li>
+                        <?php endforeach; ?>
+                    </ul>
+                </div>
+            <?php else: ?>
+                <div style="background: #fff; border: 1px solid #ccd0d4; padding: 15px; margin-bottom: 20px; border-radius: 4px;">
+                    <p>Tidak ada aktivitas pemblokiran kata kunci yang tercatat dalam 24 jam terakhir.</p>
+                </div>
+            <?php endif; ?>
+
             <form method="post" action="options.php">
                 <?php settings_fields('telu_search_protection_group'); ?>
 
@@ -195,9 +208,6 @@ class TelU_Search_Protection_Full {
         <?php
     }
 
-    /**
-     * Create the log table on activation.
-     */
     public function create_log_table() {
         global $wpdb;
         $charset_collate = $wpdb->get_charset_collate();
@@ -213,20 +223,12 @@ class TelU_Search_Protection_Full {
         dbDelta($sql);
     }
 
-    /**
-     * Clean up logs older than 24 hours via daily cron job.
-     */
     public function do_daily_log_cleanup() {
         global $wpdb;
         $wpdb->query("DELETE FROM {$this->log_table} WHERE created_at < NOW() - INTERVAL 1 DAY");
     }
 
-    /**
-     * Intercept the search query to validate it.
-     * Hooked to 'pre_get_posts' to run before the main query.
-     */
     public function intercept_search_query($query) {
-        // Only run on the frontend for the main search query.
         if (is_admin() || !$query->is_main_query() || !$query->is_search()) {
             return;
         }
@@ -238,7 +240,6 @@ class TelU_Search_Protection_Full {
 
         $options = get_option($this->option_name);
         
-        // --- 1. Blacklist Check ---
         $blacklist_raw = $options['blacklist'] ?? '';
         if (!empty($blacklist_raw)) {
             $blacklist = array_map('trim', explode(',', $blacklist_raw));
@@ -256,12 +257,11 @@ class TelU_Search_Protection_Full {
             }
         }
 
-        // --- 2. reCAPTCHA Check ---
         if (!empty($options['enable_recaptcha']) && $options['enable_recaptcha'] === '1') {
             $secret_key = $options['secret_key'] ?? '';
             $token = $_POST['token'] ?? $_GET['token'] ?? '';
 
-            if (empty($secret_key)) return; // Silently fail if not configured
+            if (empty($secret_key)) return;
             if (empty($token)) {
                 $this->block_request($options['msg_recaptcha_fail'], 'No reCAPTCHA Token');
             }
@@ -281,9 +281,6 @@ class TelU_Search_Protection_Full {
         }
     }
     
-    /**
-     * Add the reCAPTCHA v3 JavaScript to the site footer.
-     */
     public function add_recaptcha_script() {
         $options = get_option($this->option_name);
         if (empty($options['enable_recaptcha']) || $options['enable_recaptcha'] !== '1' || empty($options['site_key'])) {
@@ -319,9 +316,6 @@ class TelU_Search_Protection_Full {
         <?php
     }
 
-    /**
-     * Block the request, log it, and show a message or redirect.
-     */
     private function block_request($message, $reason) {
         global $wpdb;
         $search_query = $_GET['s'] ?? '';
@@ -344,9 +338,6 @@ class TelU_Search_Protection_Full {
         wp_die(esc_html($message), 'Pencarian Diblokir', ['response' => 403, 'back_link' => true]);
     }
 
-    /**
-     * Show admin notices on the settings page.
-     */
     public function admin_notices() {
         $screen = get_current_screen();
         if ($screen && $screen->id === 'settings_page_telu-search-protection') {
