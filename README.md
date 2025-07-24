@@ -4,7 +4,7 @@ Plugin WordPress yang sederhana namun kuat untuk melindungi form pencarian Anda 
 Deskripsi
 Form pencarian sering menjadi target serangan spam dan upaya pencarian berbahaya. Plugin Search Protection menyediakan dua lapis pertahanan:
 
-Daftar Hitam (Blacklist): Memblokir pencarian yang mengandung kata-kata spesifik atau pola karakter (regex) yang Anda tentukan.
+Daftar Hitam (Blacklist): Memblokir pencarian yang mengandung kata-kata spesifik atau pola karakter (regex) yang Anda tentukan, tanpa perlu membaca database isi post/page, sehingga tidak memberatkan database (tanpa DB Queries)
 
 Google reCAPTCHA v3: Secara transparan memverifikasi apakah pengunjung adalah manusia atau bot, dan memblokir permintaan yang mencurigakan tanpa mengganggu pengguna asli.
 
@@ -63,30 +63,14 @@ Jika Anda ingin mengalihkan pengguna ke halaman lain saat diblokir, masukkan URL
 
 Klik Save Changes.
 
-Changelog
-1.1.1 (20 Juli 2025)
-Rilis awal plugin.
-
-Fitur pemblokiran kata kunci dan regex.
-
-Integrasi Google reCAPTCHA v3.
-
-Halaman pengaturan yang lengkap.
-
-Sistem logging dan pembersihan log otomatis via Cron Job.
-
 Lisensi
-Plugin ini dirilis di bawah lisensi GPLv2. Lihat file LICENSE untuk detailnya. Dan dengan dukungan Telkom University
+Plugin ini dirilis di bawah lisensi GPLv2. Lihat file LICENSE untuk detailnya. Dan dengan dukungan Telkom University.
 
 ## Changelog
 
-### 1.2.0 (22 Juli 2025)
-* **Fitur Baru:** Menambahkan panel "Informasi Kata Kunci Terblokir" di halaman pengaturan. Panel ini menampilkan daftar kata kunci yang paling sering diblokir dalam 24 jam terakhir.
-* **Peningkatan:** Memudahkan admin untuk menyalin kata kunci yang terdeteksi untuk ditambahkan ke daftar terlarang.
-
 ### 1.1.1 (20 Juli 2025)
 * Rilis awal plugin.
-* Fitur pemblokiran kata kunci dan regex.
+* Fitur pemblokiran kata kunci dan regex sebelum membaca database.
 * Integrasi Google reCAPTCHA v3.
 * Halaman pengaturan yang lengkap.
 * Sistem logging dan pembersihan log otomatis via Cron Job.
