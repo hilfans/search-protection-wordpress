@@ -1,7 +1,7 @@
 Search Protection for WordPress
 Plugin WordPress yang sederhana namun kuat untuk melindungi form pencarian Anda dari kata kunci yang tidak diinginkan, spam, dan bot jahat menggunakan daftar hitam (blacklist) dan integrasi Google reCAPTCHA v3.
 
-Deskripsi
+## Deskripsi
 Form pencarian sering menjadi target serangan spam dan upaya pencarian berbahaya. Plugin Search Protection menyediakan dua lapis pertahanan:
 
 Daftar Hitam (Blacklist): Memblokir pencarian yang mengandung kata-kata spesifik atau pola karakter (regex) yang Anda tentukan, tanpa perlu membaca database isi post/page, sehingga tidak memberatkan database (tanpa DB Queries)
@@ -10,7 +10,7 @@ Google reCAPTCHA v3: Secara transparan memverifikasi apakah pengunjung adalah ma
 
 Plugin ini dirancang agar mudah dikonfigurasi dan bekerja secara otomatis di latar belakang untuk menjaga situs Anda tetap aman.
 
-Fitur Utama
+## Fitur Utama
 Pemblokiran Kata Kunci: Blokir pencarian berdasarkan daftar kata-kata yang tidak diinginkan (misalnya: spam, judi).
 
 Pemblokiran Regex: Gunakan Ekspresi Reguler (Regular Expressions) untuk memblokir pola pencarian yang lebih kompleks (misalnya, karakter non-ASCII, URL, dll).
@@ -25,7 +25,7 @@ Logging (Pencatatan): Mencatat semua upaya pencarian yang diblokir untuk dianali
 
 Antarmuka Pengaturan yang Mudah: Semua opsi terintegrasi dengan baik di dalam dasbor WordPress.
 
-Instalasi
+## Instalasi
 Unduh file .zip dari repositori ini.
 
 Buka Dasbor WordPress Anda, navigasi ke Plugins > Add New.
@@ -36,10 +36,10 @@ Aktifkan plugin setelah instalasi selesai.
 
 Selesai!
 
-Konfigurasi
+## Konfigurasi
 Setelah aktivasi, buka Pengaturan > Search Protection di dasbor WordPress Anda.
 
-Pengaturan reCAPTCHA v3:
+### Pengaturan reCAPTCHA v3:
 
 Centang Aktifkan reCAPTCHA untuk menggunakannya.
 
@@ -47,7 +47,7 @@ Daftarkan domain Anda di Google reCAPTCHA Admin untuk mendapatkan Site Key dan S
 
 Masukkan kedua kunci tersebut ke kolom yang sesuai.
 
-Pengaturan Pemblokiran Kata:
+### Pengaturan Pemblokiran Kata:
 
 Di kolom Daftar Kata/Pola Terlarang, masukkan kata atau pola yang ingin Anda blokir, pisahkan dengan koma.
 
@@ -55,7 +55,7 @@ Untuk kata biasa: spam, judi, test
 
 Untuk regex: Apit pola dengan garis miring, contoh: /[^\x20-\x7E]/ untuk memblokir semua karakter non-ASCII.
 
-Pengaturan Pesan & Pengalihan:
+### Pengaturan Pesan & Pengalihan:
 
 Sesuaikan pesan yang akan ditampilkan untuk setiap jenis pemblokiran.
 
@@ -63,7 +63,7 @@ Jika Anda ingin mengalihkan pengguna ke halaman lain saat diblokir, masukkan URL
 
 Klik Save Changes.
 
-Lisensi
+## Lisensi
 Plugin ini dirilis di bawah lisensi GPLv2. Lihat file LICENSE untuk detailnya. Dan dengan dukungan Telkom University.
 
 ## Changelog
