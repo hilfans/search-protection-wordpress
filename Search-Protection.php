@@ -3,7 +3,7 @@
  * Plugin Name: Search Protection
  * Plugin URI: https://github.com/hilfans/search-protection-wordpress
  * Description: Lindungi form pencarian dari spam dan karakter berbahaya dengan daftar hitam dan reCAPTCHA v3.
- * Version: 1.3.0
+ * Version: 1.3.1
  * Requires at least: 5.0
  * Requires PHP: 7.2
  * Author: <a href="https://msp.web.id" target="_blank">Hilfan</a>, <a href="https://telkomuniversity.ac.id" target="_blank">Telkom University</a>
@@ -18,6 +18,8 @@ if (!defined('ABSPATH')) exit; // Exit if accessed directly
 class TelU_Search_Protection_Full {
     private $option_name = 'telu_search_protection_settings';
     private $log_table;
+    // Ganti nama hook cron menjadi lebih spesifik untuk menghindari konflik
+    private $cron_hook_name = 'telu_sp_daily_log_cleanup_event';
 
     public function __construct() {
         global $wpdb;
@@ -35,18 +37,25 @@ class TelU_Search_Protection_Full {
         // Activation, Deactivation, and Cron Hooks
         register_activation_hook(__FILE__, [$this, 'activate']);
         register_deactivation_hook(__FILE__, [$this, 'deactivate']);
-        add_action('telu_daily_log_cleanup_event', [$this, 'do_daily_log_cleanup']);
+        // Gunakan nama hook cron yang baru
+        add_action($this->cron_hook_name, [$this, 'do_daily_log_cleanup']);
     }
 
     public function activate() {
         $this->create_log_table();
-        if (!wp_next_scheduled('telu_daily_log_cleanup_event')) {
-            wp_schedule_event(time(), 'daily', 'telu_daily_log_cleanup_event');
+        
+        // Hapus hook lama (jika ada) untuk memastikan tidak ada duplikasi setelah update
+        wp_clear_scheduled_hook('telu_daily_log_cleanup_event');
+
+        // Jadwalkan hook baru yang lebih spesifik
+        if (!wp_next_scheduled($this->cron_hook_name)) {
+            wp_schedule_event(time(), 'daily', $this->cron_hook_name);
         }
     }
 
     public function deactivate() {
-        wp_clear_scheduled_hook('telu_daily_log_cleanup_event');
+        // Hapus hook baru saat dinonaktifkan
+        wp_clear_scheduled_hook($this->cron_hook_name);
     }
 
     public function plugin_settings_link($links) {
