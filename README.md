@@ -65,6 +65,11 @@ Klik Save Changes.
 
 ## Changelog
 
+### 1.3.1  (28 Juli 2025)
+
+* **Perbaikan Bug:** Memperbaiki bug kritis di mana semua pengaturan plugin bisa terhapus setelah 24 jam. Masalah ini disebabkan oleh konflik nama pada tugas terjadwal (cron job) yang digunakan untuk membersihkan log. Nama cron job telah diubah menjadi lebih spesifik untuk mencegah konflik dengan plugin lain dan memastikan hanya data log yang dihapus.
+* **Peningkatan:** Proses aktivasi plugin kini secara otomatis menghapus jadwal cron lama (jika ada) untuk memastikan transisi yang mulus saat memperbarui plugin.
+
 ### 1.3.0 (22 Juli 2025)
 * **Fitur Baru:** Menambahkan fungsionalitas untuk mencadangkan (ekspor) dan memulihkan (impor) seluruh pengaturan plugin.
 * **Fitur Baru:** Menambahkan opsi di halaman pengaturan untuk secara otomatis menghapus semua data saat plugin dihapus.
