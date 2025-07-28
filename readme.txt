@@ -42,6 +42,12 @@ Tidak. Plugin ini sangat ringan. Proses pemblokiran terjadi di sisi server sebel
 
 == Changelog ==
 
+= 1.3.1 (28 Juli 2025) =
+
+PERBAIKAN: Memperbaiki bug kritis di mana semua pengaturan plugin bisa terhapus setelah 24 jam. Masalah ini disebabkan oleh konflik nama pada tugas terjadwal (cron job) yang digunakan untuk membersihkan log. Nama cron job telah diubah menjadi lebih spesifik untuk mencegah konflik dengan plugin lain dan memastikan hanya data log yang dihapus.
+
+PENINGKATAN: Proses aktivasi plugin kini secara otomatis menghapus jadwal cron lama (jika ada) untuk memastikan transisi yang mulus saat memperbarui plugin.
+
 = 1.3.0 =
 * FITUR: Menambahkan opsi untuk menghapus semua data plugin (pengaturan dan log) saat plugin di-uninstall.
 * FITUR: Menambahkan fungsionalitas untuk mencadangkan (ekspor) dan memulihkan (impor) semua pengaturan plugin.
