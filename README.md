@@ -65,6 +65,9 @@ Klik Save Changes.
 
 ## Changelog
 
+### 1.2.3 (22 Juli 2025)
+* **Perbaikan Bug:** Memperbaiki fatal error pada PHP (`TypeError: array_merge()`) yang dapat terjadi saat plugin pertama kali diaktifkan. Kini menggunakan `wp_parse_args` untuk penanganan opsi default yang lebih aman dan sesuai standar WordPress.
+
 ### 1.2.2 (22 Juli 2025)
 * **Perbaikan Bug:** Memperbaiki masalah pada skrip JavaScript yang menyebabkan formulir pencarian bawaan WordPress tidak berfungsi saat reCAPTCHA diaktifkan. Skrip kini lebih tangguh dan memastikan formulir tetap dapat dikirim meskipun reCAPTCHA gagal dimuat.
 
@@ -77,7 +80,5 @@ Klik Save Changes.
 
 ### 1.1.1 (20 Juli 2025)
 * Rilis awal plugin.
-* Fitur pemblokiran kata kunci dan regex.
-* Integrasi Google reCAPTCHA v3.
 * Halaman pengaturan yang lengkap.
 * Sistem logging dan pembersihan log otomatis via Cron Job.

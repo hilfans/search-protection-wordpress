@@ -3,7 +3,7 @@
  * Plugin Name: Search Protection
  * Plugin URI: https://github.com/hilfans/search-protection-wordpress
  * Description: Lindungi form pencarian dari spam dan karakter berbahaya dengan daftar hitam dan reCAPTCHA v3.
- * Version: 1.2.2
+ * Version: 1.2.3
  * Requires at least: 5.0
  * Requires PHP: 7.2
  * Author: <a href="https://msp.web.id" target="_blank">Hilfan</a>, <a href="https://telkomuniversity.ac.id" target="_blank">Telkom University</a>
@@ -98,8 +98,9 @@ class TelU_Search_Protection_Full {
             'msg_regex' => 'Pencarian diblokir karena mengandung pola karakter yang tidak diizinkan.',
             'block_page_url' => ''
         ];
-        $options = get_option($this->option_name, $defaults);
-        $options = array_merge($defaults, $options);
+        $saved_options = get_option($this->option_name);
+        // Safely merge saved options with defaults using the WordPress way.
+        $options = wp_parse_args($saved_options, $defaults);
 
         global $wpdb;
         $recent_keywords = $wpdb->get_results(
@@ -280,9 +281,6 @@ class TelU_Search_Protection_Full {
         }
     }
     
-    /**
-     * Add the reCAPTCHA v3 JavaScript to the site footer.
-     */
     public function add_recaptcha_script() {
         $options = get_option($this->option_name);
         if (empty($options['enable_recaptcha']) || $options['enable_recaptcha'] !== '1' || empty($options['site_key'])) {
@@ -296,18 +294,16 @@ class TelU_Search_Protection_Full {
                 const searchForms = document.querySelectorAll('form[role="search"], form.search-form, form[action*="/?s="]');
                 searchForms.forEach(form => {
                     form.addEventListener('submit', function(e) {
-                        // Check for a flag to prevent infinite loops
                         if (form.dataset.recaptchaAttempted) {
                             return;
                         }
 
-                        e.preventDefault(); // Stop the initial submission
-                        form.dataset.recaptchaAttempted = 'true'; // Set the flag
+                        e.preventDefault();
+                        form.dataset.recaptchaAttempted = 'true';
 
-                        // Check if grecaptcha is available
                         if (typeof grecaptcha === 'undefined' || typeof grecaptcha.execute === 'undefined') {
                             console.error('Search Protection: reCAPTCHA script not loaded correctly.');
-                            form.submit(); // Submit the form anyway and let the backend handle it.
+                            form.submit();
                             return;
                         }
 
@@ -322,10 +318,10 @@ class TelU_Search_Protection_Full {
                                 tokenInput.name = 'token';
                                 tokenInput.value = token;
                                 form.appendChild(tokenInput);
-                                form.submit(); // Resubmit the form
+                                form.submit();
                             }).catch(error => {
                                 console.error('Search Protection: reCAPTCHA execution error.', error);
-                                form.submit(); // Resubmit the form anyway
+                                form.submit();
                             });
                         });
                     });

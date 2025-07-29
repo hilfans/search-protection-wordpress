@@ -42,6 +42,9 @@ Tidak. Plugin ini sangat ringan. Proses pemblokiran terjadi di sisi server sebel
 
 == Changelog ==
 
+= 1.2.3 =
+* PERBAIKAN: Mengatasi error fatal PHP (`TypeError: array_merge()`) yang terjadi saat plugin diaktifkan pertama kali sebelum pengaturan disimpan. Menggunakan `wp_parse_args()` untuk penanganan default yang lebih aman.
+
 = 1.2.2 =
 * PERBAIKAN: Mengatasi bug kritis di mana skrip reCAPTCHA bisa menghentikan fungsi formulir pencarian default. Formulir sekarang akan selalu berfungsi, dan validasi token diserahkan ke backend jika skrip gagal.
 
@@ -54,7 +57,3 @@ Tidak. Plugin ini sangat ringan. Proses pemblokiran terjadi di sisi server sebel
 
 = 1.1.1 =
 * Rilis awal plugin.
-* Fitur pemblokiran kata kunci dan ekspresi reguler (regex).
-* Integrasi Google reCAPTCHA v3.
-* Halaman pengaturan yang lengkap dan mudah digunakan.
-* Sistem logging dan pembersihan log otomatis via Cron Job WordPress.
