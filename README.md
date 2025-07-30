@@ -81,8 +81,10 @@ Plugin ini dirilis di bawah lisensi GPLv2. Lihat file LICENSE untuk detailnya. D
 ## Changelog
 
 ### 1.2.0 (22 Juli 2025)
-* **Fitur Baru:** Menambahkan panel "Informasi Kata Kunci Terblokir" di halaman pengaturan. Panel ini menampilkan daftar kata kunci yang paling sering diblokir dalam 24 jam terakhir.
-* **Peningkatan:** Memudahkan admin untuk menyalin kata kunci yang terdeteksi untuk ditambahkan ke daftar terlarang.
+* **PERBAIKAN KEAMANAN:** Menambahkan verifikasi nonce pada form pencarian untuk melindungi dari serangan CSRF. Ini adalah perbaikan keamanan penting.
+* **PENINGKATAN KODE:** Melakukan refaktorisasi besar pada query database dan implementasi caching untuk memenuhi standar ketat dari repositori WordPress.org.
+* **PENINGKATAN PERFORMA:** Menambahkan nomor versi pada skrip yang dimuat untuk memastikan pembaruan cache yang benar di browser pengguna.
+
 
 ### 1.1.1 (20 Juli 2025)
 * Rilis awal plugin.
