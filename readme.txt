@@ -43,8 +43,10 @@ Tidak. Plugin ini sangat ringan. Proses pemblokiran terjadi di sisi server sebel
 == Changelog ==
 
 = 1.2.0 =
-* FITUR: Menambahkan panel informasi di halaman pengaturan untuk menampilkan kata kunci yang terblokir dalam 24 jam terakhir.
-* PENINGKATAN: Memudahkan admin menyalin kata kunci yang sering diblokir untuk dimasukkan ke daftar hitam.
+* PERBAIKAN KEAMANAN: Menambahkan verifikasi nonce pada form pencarian untuk melindungi dari serangan CSRF. Ini adalah perbaikan keamanan penting.
+* PENINGKATAN KODE: Melakukan refaktorisasi besar pada query database dan implementasi caching untuk memenuhi standar ketat dari repositori WordPress.org.
+* PENINGKATAN PERFORMA: Menambahkan nomor versi pada skrip yang dimuat untuk memastikan pembaruan cache yang benar di browser pengguna.
+
 
 = 1.1.1 =
 * Rilis awal plugin.
