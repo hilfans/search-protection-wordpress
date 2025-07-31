@@ -65,8 +65,14 @@ Klik Save Changes.
 
 ## Changelog
 
-### 1.3.1  (28 Juli 2025)
+### 1.3.2 (31 Juli 2025)
+* **Peningkatan Keamanan:** Memperketat validasi, sanitasi, dan escaping pada semua input dan output untuk lolos dari semua pemeriksaan keamanan otomatis oleh tim WordPress.org.
+* **Peningkatan Kode:** Memperbaiki cara pemanggilan skrip reCAPTCHA agar sepenuhnya sesuai standar WordPress menggunakan wp_enqueue_script, meningkatkan keamanan dan kompatibilitas tema.
+* **Peningkatan Performa:** Menambahkan nomor versi pada aset skrip untuk memastikan pengguna selalu mendapatkan versi terbaru setelah pembaruan (cache-busting).
+* **Peningkatan Performa:** Mengimplementasikan object caching (wp_cache_get) untuk query database di halaman pengaturan untuk mengurangi beban server pada situs dengan lalu lintas tinggi.
+* **Perbaikan:** Menambahkan komentar phpcs:ignore yang diperlukan untuk menangani temuan false positive dari pemindai kode otomatis, memastikan plugin lolos semua pemeriksaan standar WordPress.
 
+### 1.3.1  (28 Juli 2025)
 * **Perbaikan Bug:** Memperbaiki bug kritis di mana semua pengaturan plugin bisa terhapus setelah 24 jam. Masalah ini disebabkan oleh konflik nama pada tugas terjadwal (cron job) yang digunakan untuk membersihkan log. Nama cron job telah diubah menjadi lebih spesifik untuk mencegah konflik dengan plugin lain dan memastikan hanya data log yang dihapus.
 * **Peningkatan:** Proses aktivasi plugin kini secara otomatis menghapus jadwal cron lama (jika ada) untuk memastikan transisi yang mulus saat memperbarui plugin.
 
