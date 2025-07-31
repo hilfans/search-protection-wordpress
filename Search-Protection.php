@@ -3,7 +3,7 @@
  * Plugin Name: Search Protection
  * Plugin URI: https://github.com/hilfans/search-protection-wordpress
  * Description: Lindungi form pencarian dari spam dan karakter berbahaya dengan daftar hitam dan reCAPTCHA v3.
- * Version: 1.3.1
+ * Version: 1.3.2
  * Requires at least: 5.0
  * Requires PHP: 7.2
  * Author: <a href="https://msp.web.id" target="_blank">Hilfan</a>, <a href="https://telkomuniversity.ac.id" target="_blank">Telkom University</a>
@@ -18,18 +18,25 @@ if (!defined('ABSPATH')) exit; // Exit if accessed directly
 class TelU_Search_Protection_Full {
     private $option_name = 'telu_search_protection_settings';
     private $log_table;
-    // Ganti nama hook cron menjadi lebih spesifik untuk menghindari konflik
     private $cron_hook_name = 'telu_sp_daily_log_cleanup_event';
+    private $plugin_version;
 
     public function __construct() {
         global $wpdb;
         $this->log_table = $wpdb->prefix . 'telu_search_protection_logs';
+        
+        // Get plugin version for cache-busting
+        if ( ! function_exists( 'get_plugin_data' ) ) {
+            require_once( ABSPATH . 'wp-admin/includes/plugin.php' );
+        }
+        $plugin_data = get_plugin_data( __FILE__ );
+        $this->plugin_version = $plugin_data['Version'];
 
         // Main Hooks
         add_action('admin_menu', [$this, 'add_settings_page']);
         add_action('admin_init', [$this, 'register_settings']);
         add_action('pre_get_posts', [$this, 'intercept_search_query']);
-        add_action('wp_footer', [$this, 'add_recaptcha_script']);
+        add_action('wp_enqueue_scripts', [$this, 'enqueue_recaptcha_scripts']);
         add_filter('plugin_action_links_' . plugin_basename(__FILE__), [$this, 'plugin_settings_link']);
         add_action('admin_notices', [$this, 'admin_notices']);
         add_action('admin_init', [$this, 'process_settings_actions']);
@@ -37,24 +44,18 @@ class TelU_Search_Protection_Full {
         // Activation, Deactivation, and Cron Hooks
         register_activation_hook(__FILE__, [$this, 'activate']);
         register_deactivation_hook(__FILE__, [$this, 'deactivate']);
-        // Gunakan nama hook cron yang baru
         add_action($this->cron_hook_name, [$this, 'do_daily_log_cleanup']);
     }
 
     public function activate() {
         $this->create_log_table();
-        
-        // Hapus hook lama (jika ada) untuk memastikan tidak ada duplikasi setelah update
         wp_clear_scheduled_hook('telu_daily_log_cleanup_event');
-
-        // Jadwalkan hook baru yang lebih spesifik
         if (!wp_next_scheduled($this->cron_hook_name)) {
             wp_schedule_event(time(), 'daily', $this->cron_hook_name);
         }
     }
 
     public function deactivate() {
-        // Hapus hook baru saat dinonaktifkan
         wp_clear_scheduled_hook($this->cron_hook_name);
     }
 
@@ -120,13 +121,25 @@ class TelU_Search_Protection_Full {
         $saved_options = get_option($this->option_name);
         $options = wp_parse_args($saved_options, $defaults);
 
-        global $wpdb;
-        $recent_keywords = $wpdb->get_results(
-            $wpdb->prepare(
-                "SELECT search_term, COUNT(*) as count FROM {$this->log_table} WHERE created_at >= %s GROUP BY search_term ORDER BY count DESC LIMIT 20",
-                date('Y-m-d H:i:s', strtotime('-1 day'))
-            )
-        );
+        $cache_key = 'telu_sp_recent_keywords';
+        $recent_keywords = wp_cache_get($cache_key, 'telu_search_protection');
+
+        if (false === $recent_keywords) {
+            global $wpdb;
+            $one_day_ago = gmdate('Y-m-d H:i:s', time() - DAY_IN_SECONDS);
+            
+            // phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.DirectQuery
+            $recent_keywords = $wpdb->get_results(
+                $wpdb->prepare(
+                    "SELECT search_term, COUNT(*) as count FROM {$this->log_table} WHERE created_at >= %s GROUP BY search_term ORDER BY count DESC LIMIT 20",
+                    $one_day_ago
+                )
+            );
+            // phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+
+            wp_cache_set($cache_key, $recent_keywords, 'telu_search_protection', 15 * MINUTE_IN_SECONDS);
+        }
 
         ?>
         <div class="wrap">
@@ -272,15 +285,19 @@ class TelU_Search_Protection_Full {
             return;
         }
 
-        if ($_POST['telu_sp_action'] == 'export_settings') {
-            if (!isset($_POST['telu_sp_export_nonce_field']) || !wp_verify_nonce($_POST['telu_sp_export_nonce_field'], 'telu_sp_export_nonce')) {
+        $action = sanitize_text_field(wp_unslash($_POST['telu_sp_action']));
+        
+        if ($action === 'export_settings') {
+            $nonce = isset($_POST['telu_sp_export_nonce_field']) ? sanitize_text_field(wp_unslash($_POST['telu_sp_export_nonce_field'])) : '';
+            if (!wp_verify_nonce($nonce, 'telu_sp_export_nonce')) {
                 wp_die('Pemeriksaan keamanan gagal!');
             }
             $this->export_settings();
         }
 
-        if ($_POST['telu_sp_action'] == 'import_settings') {
-            if (!isset($_POST['telu_sp_import_nonce_field']) || !wp_verify_nonce($_POST['telu_sp_import_nonce_field'], 'telu_sp_import_nonce')) {
+        if ($action === 'import_settings') {
+            $nonce = isset($_POST['telu_sp_import_nonce_field']) ? sanitize_text_field(wp_unslash($_POST['telu_sp_import_nonce_field'])) : '';
+            if (!wp_verify_nonce($nonce, 'telu_sp_import_nonce')) {
                 wp_die('Pemeriksaan keamanan gagal!');
             }
             $this->import_settings();
@@ -293,7 +310,7 @@ class TelU_Search_Protection_Full {
         $settings = get_option($this->option_name);
         if (empty($settings)) $settings = $this->get_default_settings();
 
-        $filename = 'search-protection-settings-backup-' . date('Y-m-d') . '.json';
+        $filename = 'search-protection-settings-backup-' . gmdate('Y-m-d') . '.json';
         
         header('Content-Type: application/json');
         header('Content-Disposition: attachment; filename=' . $filename);
@@ -306,13 +323,22 @@ class TelU_Search_Protection_Full {
     }
 
     private function import_settings() {
-        if (!current_user_can('manage_options')) return;
+        if (!current_user_can('manage_options')) {
+            wp_die('Anda tidak memiliki izin untuk melakukan tindakan ini.');
+        }
 
-        if (empty($_FILES['import_file']['tmp_name'])) {
+        $nonce = isset($_POST['telu_sp_import_nonce_field']) ? sanitize_text_field(wp_unslash($_POST['telu_sp_import_nonce_field'])) : '';
+        if (!wp_verify_nonce($nonce, 'telu_sp_import_nonce')) {
+            add_settings_error('telu_search_protection_notices', 'import_error', 'Pemeriksaan keamanan gagal.', 'error');
+            return;
+        }
+        
+        if (empty($_FILES['import_file']) || empty($_FILES['import_file']['tmp_name'])) {
             add_settings_error('telu_search_protection_notices', 'import_error', 'Tidak ada file yang dipilih untuk diimpor.', 'error');
             return;
         }
 
+        // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
         $file = $_FILES['import_file'];
 
         if ($file['error'] !== UPLOAD_ERR_OK) {
@@ -326,6 +352,7 @@ class TelU_Search_Protection_Full {
             return;
         }
 
+        // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
         $content = file_get_contents($file['tmp_name']);
         $imported_settings = json_decode($content, true);
 
@@ -343,6 +370,7 @@ class TelU_Search_Protection_Full {
     public function create_log_table() {
         global $wpdb;
         $charset_collate = $wpdb->get_charset_collate();
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.SchemaChange
         $sql = "CREATE TABLE IF NOT EXISTS {$this->log_table} (
             id BIGINT(20) NOT NULL AUTO_INCREMENT,
             search_term TEXT NOT NULL,
@@ -357,7 +385,18 @@ class TelU_Search_Protection_Full {
 
     public function do_daily_log_cleanup() {
         global $wpdb;
-        $wpdb->query("DELETE FROM {$this->log_table} WHERE created_at < NOW() - INTERVAL 1 DAY");
+
+        // phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+        $wpdb->query(
+            $wpdb->prepare(
+                "DELETE FROM {$this->log_table} WHERE created_at < (NOW() - INTERVAL %d DAY)",
+                1
+            )
+        );
+        // phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+
+        wp_cache_delete('telu_sp_recent_keywords', 'telu_search_protection');
     }
 
     public function intercept_search_query($query) {
@@ -365,6 +404,7 @@ class TelU_Search_Protection_Full {
             return;
         }
 
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended
         $search_query = trim($query->get('s'));
         if (empty($search_query)) {
             return;
@@ -391,15 +431,17 @@ class TelU_Search_Protection_Full {
 
         if (!empty($options['enable_recaptcha']) && $options['enable_recaptcha'] === '1') {
             $secret_key = $options['secret_key'] ?? '';
-            $token = $_POST['token'] ?? $_GET['token'] ?? '';
-
+            // phpcs:ignore WordPress.Security.NonceVerification.Missing
+            $token = isset($_POST['token']) ? sanitize_text_field(wp_unslash($_POST['token'])) : '';
+            
             if (empty($secret_key)) return;
             if (empty($token)) {
                 $this->block_request($options['msg_recaptcha_fail'], 'No reCAPTCHA Token');
             }
-
+            
+            $remote_ip = isset($_SERVER['REMOTE_ADDR']) ? sanitize_text_field(wp_unslash($_SERVER['REMOTE_ADDR'])) : '';
             $response = wp_remote_post('https://www.google.com/recaptcha/api/siteverify', [
-                'body' => ['secret' => $secret_key, 'response' => $token, 'remoteip' => $_SERVER['REMOTE_ADDR']]
+                'body' => ['secret' => $secret_key, 'response' => $token, 'remoteip' => $remote_ip]
             ]);
 
             if (is_wp_error($response)) {
@@ -413,42 +455,41 @@ class TelU_Search_Protection_Full {
         }
     }
     
-    public function add_recaptcha_script() {
+    public function enqueue_recaptcha_scripts() {
         $options = wp_parse_args(get_option($this->option_name), $this->get_default_settings());
 
         if (empty($options['enable_recaptcha']) || $options['enable_recaptcha'] !== '1' || empty($options['site_key'])) {
             return;
         }
         $site_key = $options['site_key'];
-        ?>
-        <script src="https://www.google.com/recaptcha/api.js?render=<?php echo esc_attr($site_key); ?>"></script>
-        <script id="search-protection-recaptcha-script">
-            document.addEventListener('submit', function(e) {
-                // Find the form that was submitted
-                const form = e.target.closest('form[role="search"], form.search-form, form[action*="/?s="]');
 
-                // If it's not a search form we care about, do nothing
+        wp_register_script(
+            'google-recaptcha',
+            "https://www.google.com/recaptcha/api.js?render={$site_key}",
+            [],
+            $this->plugin_version, // FIX: Added plugin version for cache busting
+            true
+        );
+
+        $inline_script = "
+            document.addEventListener('submit', function(e) {
+                const form = e.target.closest('form[role=\"search\"], form.search-form, form[action*=\"/?s=\"]');
                 if (!form) {
                     return;
                 }
-
-                // Check for a flag to prevent infinite loops
                 if (form.dataset.recaptchaAttempted) {
                     return;
                 }
-
-                e.preventDefault(); // Stop the initial submission
-                form.dataset.recaptchaAttempted = 'true'; // Set the flag
-
+                e.preventDefault();
+                form.dataset.recaptchaAttempted = 'true';
                 if (typeof grecaptcha === 'undefined' || typeof grecaptcha.execute === 'undefined') {
                     console.error('Search Protection: reCAPTCHA script not loaded correctly.');
                     form.submit();
                     return;
                 }
-
                 grecaptcha.ready(() => {
-                    grecaptcha.execute('<?php echo esc_js($site_key); ?>', { action: 'search' }).then(token => {
-                        const existingToken = form.querySelector('input[name="token"]');
+                    grecaptcha.execute('" . esc_js($site_key) . "', { action: 'search' }).then(token => {
+                        const existingToken = form.querySelector('input[name=\"token\"]');
                         if (existingToken) {
                             existingToken.remove();
                         }
@@ -464,20 +505,25 @@ class TelU_Search_Protection_Full {
                     });
                 });
             });
-        </script>
-        <?php
+        ";
+
+        wp_enqueue_script('google-recaptcha');
+        wp_add_inline_script('google-recaptcha', $inline_script);
     }
 
     private function block_request($message, $reason) {
         global $wpdb;
-        $search_query = $_GET['s'] ?? '';
-        $user_ip = $_SERVER['REMOTE_ADDR'] ?? 'UNKNOWN';
+        $search_query = get_search_query();
+        $user_ip = isset($_SERVER['REMOTE_ADDR']) ? sanitize_text_field(wp_unslash($_SERVER['REMOTE_ADDR'])) : 'UNKNOWN';
 
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
         $wpdb->insert($this->log_table, [
-            'search_term'    => sanitize_text_field($search_query),
+            'search_term'    => $search_query,
             'blocked_reason' => sanitize_text_field($reason),
-            'user_ip'        => sanitize_text_field($user_ip)
+            'user_ip'        => $user_ip
         ]);
+
+        wp_cache_delete('telu_sp_recent_keywords', 'telu_search_protection');
 
         $options = wp_parse_args(get_option($this->option_name), $this->get_default_settings());
         $block_page_url = $options['block_page_url'] ?? '';
@@ -494,7 +540,7 @@ class TelU_Search_Protection_Full {
             esc_url($homepage_url)
         );
 
-        wp_die($full_message, 'Pencarian Diblokir', ['response' => 403]);
+        wp_die(wp_kses_post($full_message), 'Pencarian Diblokir', ['response' => 403]);
     }
 
     public function admin_notices() {
