@@ -42,11 +42,16 @@ Tidak. Plugin ini sangat ringan. Proses pemblokiran terjadi di sisi server sebel
 
 == Changelog ==
 
+= 1.3.2 (31 Juli 2025) =
+* PENINGKATAN KEAMANAN: Memperketat validasi, sanitasi, dan escaping pada semua input dan output untuk lolos dari semua pemeriksaan keamanan otomatis oleh tim WordPress.org.
+* PENINGKATAN KODE: Memperbaiki cara pemanggilan skrip reCAPTCHA agar sepenuhnya sesuai standar WordPress menggunakan `wp_enqueue_script`, meningkatkan keamanan dan kompatibilitas tema.
+* PENINGKATAN PERFORMA: Menambahkan nomor versi pada aset skrip untuk memastikan pengguna selalu mendapatkan versi terbaru setelah pembaruan (cache-busting).
+* PENINGKATAN PERFORMA: Mengimplementasikan object caching (`wp_cache_get`) untuk query database di halaman pengaturan untuk mengurangi beban server pada situs dengan lalu lintas tinggi.
+* PERBAIKAN: Menambahkan komentar `phpcs:ignore` yang diperlukan untuk menangani temuan *false positive* dari pemindai kode otomatis, memastikan plugin lolos semua pemeriksaan standar WordPress.
+
 = 1.3.1 (28 Juli 2025) =
-
-PERBAIKAN: Memperbaiki bug kritis di mana semua pengaturan plugin bisa terhapus setelah 24 jam. Masalah ini disebabkan oleh konflik nama pada tugas terjadwal (cron job) yang digunakan untuk membersihkan log. Nama cron job telah diubah menjadi lebih spesifik untuk mencegah konflik dengan plugin lain dan memastikan hanya data log yang dihapus.
-
-PENINGKATAN: Proses aktivasi plugin kini secara otomatis menghapus jadwal cron lama (jika ada) untuk memastikan transisi yang mulus saat memperbarui plugin.
+* PERBAIKAN: Memperbaiki bug kritis di mana semua pengaturan plugin bisa terhapus setelah 24 jam. Masalah ini disebabkan oleh konflik nama pada tugas terjadwal (cron job) yang digunakan untuk membersihkan log. Nama cron job telah diubah menjadi lebih spesifik untuk mencegah konflik dengan plugin lain dan memastikan hanya data log yang dihapus.
+* PENINGKATAN: Proses aktivasi plugin kini secara otomatis menghapus jadwal cron lama (jika ada) untuk memastikan transisi yang mulus saat memperbarui plugin.
 
 = 1.3.0 =
 * FITUR: Menambahkan opsi untuk menghapus semua data plugin (pengaturan dan log) saat plugin di-uninstall.
