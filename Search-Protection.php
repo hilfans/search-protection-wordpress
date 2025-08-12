@@ -6,7 +6,7 @@
  * Version: 1.3.2
  * Requires at least: 5.0
  * Requires PHP: 7.2
- * Author: <a href="https://msp.web.id" target="_blank">Hilfan</a>, <a href="https://telkomuniversity.ac.id" target="_blank">Telkom University</a>
+ * Author: <a href="https://msp.web.id" target="_blank">Hilfan</a>
  * Author URI:  https://msp.web.id/
  * License: GPLv2 or later
  * License URI:  https://www.gnu.org/licenses/gpl-2.0.html
@@ -15,17 +15,16 @@
 
 if (!defined('ABSPATH')) exit; // Exit if accessed directly
 
-class TelU_Search_Protection_Full {
-    private $option_name = 'telu_search_protection_settings';
+class SPH_Search_Protection {
+    private $option_name = 'sph_settings';
     private $log_table;
-    private $cron_hook_name = 'telu_sp_daily_log_cleanup_event';
+    private $cron_hook_name = 'sph_daily_log_cleanup';
     private $plugin_version;
 
     public function __construct() {
         global $wpdb;
-        $this->log_table = $wpdb->prefix . 'telu_search_protection_logs';
+        $this->log_table = $wpdb->prefix . 'sph_logs';
         
-        // Get plugin version for cache-busting
         if ( ! function_exists( 'get_plugin_data' ) ) {
             require_once( ABSPATH . 'wp-admin/includes/plugin.php' );
         }
@@ -49,7 +48,7 @@ class TelU_Search_Protection_Full {
 
     public function activate() {
         $this->create_log_table();
-        wp_clear_scheduled_hook('telu_daily_log_cleanup_event');
+        wp_clear_scheduled_hook($this->cron_hook_name);
         if (!wp_next_scheduled($this->cron_hook_name)) {
             wp_schedule_event(time(), 'daily', $this->cron_hook_name);
         }
@@ -60,7 +59,7 @@ class TelU_Search_Protection_Full {
     }
 
     public function plugin_settings_link($links) {
-        $settings_link = '<a href="options-general.php?page=telu-search-protection">Settings</a>';
+        $settings_link = '<a href="options-general.php?page=search-protection-settings">Settings</a>';
         array_unshift($links, $settings_link);
         return $links;
     }
@@ -70,14 +69,14 @@ class TelU_Search_Protection_Full {
             'Search Protection Settings',
             'Search Protection',
             'manage_options',
-            'telu-search-protection',
+            'search-protection-settings',
             [$this, 'settings_page_html']
         );
     }
 
     public function register_settings() {
         register_setting(
-            'telu_search_protection_group',
+            'sph_settings_group',
             $this->option_name,
             [$this, 'sanitize_settings']
         );
@@ -121,8 +120,8 @@ class TelU_Search_Protection_Full {
         $saved_options = get_option($this->option_name);
         $options = wp_parse_args($saved_options, $defaults);
 
-        $cache_key = 'telu_sp_recent_keywords';
-        $recent_keywords = wp_cache_get($cache_key, 'telu_search_protection');
+        $cache_key = 'sph_recent_keywords';
+        $recent_keywords = wp_cache_get($cache_key, 'search_protection');
 
         if (false === $recent_keywords) {
             global $wpdb;
@@ -138,13 +137,13 @@ class TelU_Search_Protection_Full {
             );
             // phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 
-            wp_cache_set($cache_key, $recent_keywords, 'telu_search_protection', 15 * MINUTE_IN_SECONDS);
+            wp_cache_set($cache_key, $recent_keywords, 'search_protection', 15 * MINUTE_IN_SECONDS);
         }
 
         ?>
         <div class="wrap">
             <h1>Search Protection Settings</h1>
-            <?php settings_errors('telu_search_protection_notices'); ?>
+            <?php settings_errors('sph_notices'); ?>
             <p>Plugin ini membantu melindungi form pencarian Anda dari kata-kata yang tidak diinginkan dan spam menggunakan reCAPTCHA v3.</p>
 
             <h2>Informasi Kata Kunci Terblokir (24 Jam Terakhir)</h2>
@@ -175,7 +174,7 @@ class TelU_Search_Protection_Full {
             <?php endif; ?>
 
             <form method="post" action="options.php">
-                <?php settings_fields('telu_search_protection_group'); ?>
+                <?php settings_fields('sph_settings_group'); ?>
 
                 <h2>Pengaturan reCAPTCHA v3</h2>
                 <table class="form-table">
@@ -258,8 +257,8 @@ class TelU_Search_Protection_Full {
                 <div style="flex: 1; min-width: 300px;">
                     <p>Simpan semua konfigurasi plugin di atas ke dalam sebuah file .json.</p>
                     <form method="post">
-                        <input type="hidden" name="telu_sp_action" value="export_settings" />
-                        <?php wp_nonce_field('telu_sp_export_nonce', 'telu_sp_export_nonce_field'); ?>
+                        <input type="hidden" name="sph_action" value="export_settings" />
+                        <?php wp_nonce_field('sph_export_nonce', 'sph_export_nonce_field'); ?>
                         <?php submit_button('Cadangkan Pengaturan', 'secondary', 'submit', false); ?>
                     </form>
                 </div>
@@ -270,8 +269,8 @@ class TelU_Search_Protection_Full {
                             <label for="import_file">Pilih File Cadangan (.json):</label><br>
                             <input type="file" id="import_file" name="import_file" accept=".json" required>
                         </p>
-                        <input type="hidden" name="telu_sp_action" value="import_settings" />
-                        <?php wp_nonce_field('telu_sp_import_nonce', 'telu_sp_import_nonce_field'); ?>
+                        <input type="hidden" name="sph_action" value="import_settings" />
+                        <?php wp_nonce_field('sph_import_nonce', 'sph_import_nonce_field'); ?>
                         <?php submit_button('Impor & Pulihkan Pengaturan', 'primary', 'submit', false); ?>
                     </form>
                 </div>
@@ -281,23 +280,23 @@ class TelU_Search_Protection_Full {
     }
     
     public function process_settings_actions() {
-        if (empty($_POST['telu_sp_action'])) {
+        if (empty($_POST['sph_action'])) {
             return;
         }
 
-        $action = sanitize_text_field(wp_unslash($_POST['telu_sp_action']));
+        $action = sanitize_text_field(wp_unslash($_POST['sph_action']));
         
         if ($action === 'export_settings') {
-            $nonce = isset($_POST['telu_sp_export_nonce_field']) ? sanitize_text_field(wp_unslash($_POST['telu_sp_export_nonce_field'])) : '';
-            if (!wp_verify_nonce($nonce, 'telu_sp_export_nonce')) {
+            $nonce = isset($_POST['sph_export_nonce_field']) ? sanitize_text_field(wp_unslash($_POST['sph_export_nonce_field'])) : '';
+            if (!wp_verify_nonce($nonce, 'sph_export_nonce')) {
                 wp_die('Pemeriksaan keamanan gagal!');
             }
             $this->export_settings();
         }
 
         if ($action === 'import_settings') {
-            $nonce = isset($_POST['telu_sp_import_nonce_field']) ? sanitize_text_field(wp_unslash($_POST['telu_sp_import_nonce_field'])) : '';
-            if (!wp_verify_nonce($nonce, 'telu_sp_import_nonce')) {
+            $nonce = isset($_POST['sph_import_nonce_field']) ? sanitize_text_field(wp_unslash($_POST['sph_import_nonce_field'])) : '';
+            if (!wp_verify_nonce($nonce, 'sph_import_nonce')) {
                 wp_die('Pemeriksaan keamanan gagal!');
             }
             $this->import_settings();
@@ -327,14 +326,14 @@ class TelU_Search_Protection_Full {
             wp_die('Anda tidak memiliki izin untuk melakukan tindakan ini.');
         }
 
-        $nonce = isset($_POST['telu_sp_import_nonce_field']) ? sanitize_text_field(wp_unslash($_POST['telu_sp_import_nonce_field'])) : '';
-        if (!wp_verify_nonce($nonce, 'telu_sp_import_nonce')) {
-            add_settings_error('telu_search_protection_notices', 'import_error', 'Pemeriksaan keamanan gagal.', 'error');
+        $nonce = isset($_POST['sph_import_nonce_field']) ? sanitize_text_field(wp_unslash($_POST['sph_import_nonce_field'])) : '';
+        if (!wp_verify_nonce($nonce, 'sph_import_nonce')) {
+            add_settings_error('sph_notices', 'import_error', 'Pemeriksaan keamanan gagal.', 'error');
             return;
         }
         
         if (empty($_FILES['import_file']) || empty($_FILES['import_file']['tmp_name'])) {
-            add_settings_error('telu_search_protection_notices', 'import_error', 'Tidak ada file yang dipilih untuk diimpor.', 'error');
+            add_settings_error('sph_notices', 'import_error', 'Tidak ada file yang dipilih untuk diimpor.', 'error');
             return;
         }
 
@@ -342,13 +341,13 @@ class TelU_Search_Protection_Full {
         $file = $_FILES['import_file'];
 
         if ($file['error'] !== UPLOAD_ERR_OK) {
-            add_settings_error('telu_search_protection_notices', 'import_error', 'Terjadi kesalahan saat mengunggah file.', 'error');
+            add_settings_error('sph_notices', 'import_error', 'Terjadi kesalahan saat mengunggah file.', 'error');
             return;
         }
 
         $extension = pathinfo($file['name'], PATHINFO_EXTENSION);
         if ($extension !== 'json') {
-            add_settings_error('telu_search_protection_notices', 'import_error', 'File tidak valid. Harap unggah file cadangan .json yang benar.', 'error');
+            add_settings_error('sph_notices', 'import_error', 'File tidak valid. Harap unggah file cadangan .json yang benar.', 'error');
             return;
         }
 
@@ -357,14 +356,14 @@ class TelU_Search_Protection_Full {
         $imported_settings = json_decode($content, true);
 
         if (json_last_error() !== JSON_ERROR_NONE) {
-            add_settings_error('telu_search_protection_notices', 'import_error', 'Gagal membaca file cadangan. File JSON tidak valid.', 'error');
+            add_settings_error('sph_notices', 'import_error', 'Gagal membaca file cadangan. File JSON tidak valid.', 'error');
             return;
         }
         
         $sanitized_settings = $this->sanitize_settings($imported_settings);
         update_option($this->option_name, $sanitized_settings);
 
-        add_settings_error('telu_search_protection_notices', 'import_success', 'Pengaturan berhasil diimpor dan disimpan.', 'success');
+        add_settings_error('sph_notices', 'import_success', 'Pengaturan berhasil diimpor dan disimpan.', 'success');
     }
 
     public function create_log_table() {
@@ -396,7 +395,7 @@ class TelU_Search_Protection_Full {
         );
         // phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 
-        wp_cache_delete('telu_sp_recent_keywords', 'telu_search_protection');
+        wp_cache_delete('sph_recent_keywords', 'search_protection');
     }
 
     public function intercept_search_query($query) {
@@ -467,7 +466,7 @@ class TelU_Search_Protection_Full {
             'google-recaptcha',
             "https://www.google.com/recaptcha/api.js?render={$site_key}",
             [],
-            $this->plugin_version, // FIX: Added plugin version for cache busting
+            $this->plugin_version,
             true
         );
 
@@ -523,7 +522,7 @@ class TelU_Search_Protection_Full {
             'user_ip'        => $user_ip
         ]);
 
-        wp_cache_delete('telu_sp_recent_keywords', 'telu_search_protection');
+        wp_cache_delete('sph_recent_keywords', 'search_protection');
 
         $options = wp_parse_args(get_option($this->option_name), $this->get_default_settings());
         $block_page_url = $options['block_page_url'] ?? '';
@@ -545,7 +544,7 @@ class TelU_Search_Protection_Full {
 
     public function admin_notices() {
         $screen = get_current_screen();
-        if ($screen && $screen->id === 'settings_page_telu-search-protection') {
+        if ($screen && $screen->id === 'settings_page_search-protection-settings') {
             echo '<div class="notice notice-info is-dismissible"><p>Pastikan Anda telah mendaftarkan domain Anda di <a href="https://www.google.com/recaptcha/admin" target="_blank">Google reCAPTCHA (v3)</a> untuk mendapatkan Site Key dan Secret Key.</p></div>';
             
             $options = wp_parse_args(get_option($this->option_name), $this->get_default_settings());
@@ -556,4 +555,4 @@ class TelU_Search_Protection_Full {
     }
 }
 
-new TelU_Search_Protection_Full();
+new SPH_Search_Protection();
