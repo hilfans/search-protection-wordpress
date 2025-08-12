@@ -3,7 +3,7 @@
  * Plugin Name: Search Protection
  * Plugin URI: https://github.com/hilfans/search-protection-wordpress
  * Description: Lindungi form pencarian dari spam dan karakter berbahaya dengan daftar hitam dan reCAPTCHA v3.
- * Version: 1.3.2
+ * Version: 1.4.0
  * Requires at least: 5.0
  * Requires PHP: 7.2
  * Author: <a href="https://msp.web.id" target="_blank">Hilfan</a>
@@ -95,6 +95,7 @@ class SPH_Search_Protection {
         $new_input['msg_regex'] = sanitize_text_field($input['msg_regex'] ?? $defaults['msg_regex']);
         $new_input['block_page_url'] = isset($input['block_page_url']) ? esc_url_raw($input['block_page_url']) : '';
         $new_input['delete_on_uninstall'] = isset($input['delete_on_uninstall']) ? '1' : '0';
+        $new_input['enable_auto_log_cleanup'] = isset($input['enable_auto_log_cleanup']) ? '1' : '0';
     
         return $new_input;
     }
@@ -109,7 +110,8 @@ class SPH_Search_Protection {
             'msg_badword' => 'Pencarian diblokir karena mengandung kata yang tidak diizinkan.',
             'msg_regex' => 'Pencarian diblokir karena mengandung pola karakter yang tidak diizinkan.',
             'block_page_url' => '',
-            'delete_on_uninstall' => '0'
+            'delete_on_uninstall' => '0',
+            'enable_auto_log_cleanup' => '1', // Default to ON to maintain behavior for existing users
         ];
     }
 
@@ -236,6 +238,13 @@ class SPH_Search_Protection {
                 <h2>Manajemen Data</h2>
                 <table class="form-table">
                     <tr valign="top">
+                        <th scope="row">Hapus Log Otomatis</th>
+                        <td>
+                            <input type="checkbox" id="enable_auto_log_cleanup" name="<?php echo esc_attr($this->option_name); ?>[enable_auto_log_cleanup]" value="1" <?php checked('1', $options['enable_auto_log_cleanup']); ?>>
+                            <label for="enable_auto_log_cleanup">Centang untuk menghapus log pencarian yang diblokir secara otomatis setiap 24 jam.</label>
+                        </td>
+                    </tr>
+                    <tr valign="top">
                         <th scope="row">Hapus Data Saat Uninstall</th>
                         <td>
                             <input type="checkbox" id="delete_on_uninstall" name="<?php echo esc_attr($this->option_name); ?>[delete_on_uninstall]" value="1" <?php checked('1', $options['delete_on_uninstall']); ?>>
@@ -244,8 +253,6 @@ class SPH_Search_Protection {
                         </td>
                     </tr>
                 </table>
-
-                <p><em>Catatan: Log pencarian yang diblokir akan dihapus otomatis setiap 24 jam untuk menjaga performa.</em></p>
 
                 <?php submit_button('Simpan Semua Perubahan'); ?>
             </form>
@@ -383,19 +390,23 @@ class SPH_Search_Protection {
     }
 
     public function do_daily_log_cleanup() {
-        global $wpdb;
+        $options = get_option($this->option_name);
 
-        // phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
-        $wpdb->query(
-            $wpdb->prepare(
-                "DELETE FROM {$this->log_table} WHERE created_at < (NOW() - INTERVAL %d DAY)",
-                1
-            )
-        );
-        // phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+        if ( ! empty( $options['enable_auto_log_cleanup'] ) && '1' === $options['enable_auto_log_cleanup'] ) {
+            global $wpdb;
 
-        wp_cache_delete('sph_recent_keywords', 'search_protection');
+            // phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+            $wpdb->query(
+                $wpdb->prepare(
+                    "DELETE FROM {$this->log_table} WHERE created_at < (NOW() - INTERVAL %d DAY)",
+                    1
+                )
+            );
+            // phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+
+            wp_cache_delete('sph_recent_keywords', 'search_protection');
+        }
     }
 
     public function intercept_search_query($query) {
