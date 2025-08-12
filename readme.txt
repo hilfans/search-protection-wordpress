@@ -4,7 +4,7 @@ Contributors: hilfans0
 Tags: search, security, block, spam, protection
 Requires at least: 5.0
 Tested up to: 6.8
-Stable tag: 1.3.2
+Stable tag: 1.4.0
 Requires PHP: 7.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -34,7 +34,7 @@ Ya, jika Anda ingin mengaktifkan fitur reCAPTCHA v3. Anda bisa mendapatkannya se
 
 = Apakah plugin ini memperlambat situs saya? =
 
-Tidak. Plugin ini sangat ringan. Proses pemblokiran terjadi di sisi server sebelum WordPress menjalankan kueri pencarian yang berat. Pembersihan log juga dijadwalkan dengan Cron Job agar tidak membebani server.
+Tidak. Plugin ini sangat ringan. Proses pemblokiran terjadi di sisi server sebelum WordPress menjalankan kueri pencarian yang berat ke database. Pembersihan log juga dijadwalkan dengan Cron Job agar tidak membebani server.
 
 == Screenshots ==
 
