@@ -1,10 +1,10 @@
 === Search Protection ===
 Plugin Name: Search Protection
-Contributors: hilfans0, telkomuniversity, hilfans
-Tags: search, security, recaptcha, block, spam, protection, blacklist, firewall
+Contributors: hilfans0
+Tags: search, security, block, spam, protection
 Requires at least: 5.0
 Tested up to: 6.8
-Stable tag: 1.1.1
+Stable tag: 1.3.2
 Requires PHP: 7.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
