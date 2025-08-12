@@ -38,9 +38,16 @@ Tidak. Plugin ini sangat ringan. Proses pemblokiran terjadi di sisi server sebel
 
 == Screenshots ==
 
-1.  Halaman pengaturan utama untuk konfigurasi reCAPTCHA, daftar hitam, dan pesan kustom.
+1.  Halaman pengaturan utama untuk Pengaturan reCAPTCHA v3, Pengaturan Pemblokiran Kata.
+2.  Menu pengaturan utama untuk Pengaturan Pesan & Pengalihan, Manajemen Data, Simpan Semua Perubahan.
+3.  Menu pengaturan utama untuk Cadangkan & Pulihkan Pengaturan. 
 
 == Changelog ==
+
+= 1.4.0 (12 Agustus 2025) =
+* FITUR: Menambahkan opsi di halaman pengaturan untuk mengaktifkan atau menonaktifkan penghapusan log otomatis setiap 24 jam.
+* PENINGKATAN: Menghapus semua nama dan prefix yang berasosiasi dengan institusi (`TelU`, `telu_`) dan menggantinya dengan prefix unik (`SPH`, `sph_`) untuk mematuhi pedoman WordPress.org.
+* CATATAN PENTING: Karena perubahan nama internal, semua pengaturan plugin akan direset setelah melakukan update ke versi ini. Harap konfigurasikan ulang setelah pembaruan.
 
 = 1.3.2 (31 Juli 2025) =
 * PENINGKATAN KEAMANAN: Memperketat validasi, sanitasi, dan escaping pada semua input dan output untuk lolos dari semua pemeriksaan keamanan otomatis oleh tim WordPress.org.
