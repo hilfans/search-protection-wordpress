@@ -44,6 +44,13 @@ Tidak. Plugin ini sangat ringan. Proses pemblokiran terjadi di sisi server sebel
 
 == Changelog ==
 
+= 1.4.1 (22 Agustus 2025) =
+* PENINGKATAN KEPATUHAN: Mengubah semua prefix internal plugin (misalnya `sph_`) menjadi `search_protect_` untuk memenuhi persyaratan keunikan dan panjang minimal dari WordPress.org.
+* PENINGKATAN KEAMANAN: Mengganti fungsi `echo json_encode` dengan `wp_send_json` untuk proses ekspor pengaturan yang lebih aman dan sesuai standar WordPress.
+* PENINGKATAN KEAMANAN: Menambahkan sanitasi eksplisit pada nama file yang diunggah saat proses impor pengaturan.
+* DOKUMENTASI: Menambahkan bagian "Layanan Eksternal" pada file readme untuk menjelaskan penggunaan API Google reCAPTCHA sesuai pedoman.
+* CATATAN PENTING: Karena perubahan prefix internal yang signifikan, semua pengaturan plugin akan direset setelah melakukan update ke versi ini. Harap lakukan konfigurasi ulang atau pulihkan dari cadangan.
+
 = 1.4.0 (12 Agustus 2025) =
 * FITUR: Menambahkan opsi di halaman pengaturan untuk mengaktifkan atau menonaktifkan penghapusan log otomatis setiap 24 jam.
 * PENINGKATAN: Menghapus semua nama dan prefix yang berasosiasi dengan institusi (`TelU`, `telu_`) dan menggantinya dengan prefix unik (`SPH`, `sph_`) untuk mematuhi pedoman WordPress.org.
