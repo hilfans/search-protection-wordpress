@@ -36,6 +36,14 @@ Ya, jika Anda ingin mengaktifkan fitur reCAPTCHA v3. Anda bisa mendapatkannya se
 
 Tidak. Plugin ini sangat ringan. Proses pemblokiran terjadi di sisi server sebelum WordPress menjalankan kueri pencarian yang berat ke database. Pembersihan log juga dijadwalkan dengan Cron Job agar tidak membebani server.
 
+== External Services ==
+
+This plugin integrates with the Google reCAPTCHA v3 service to protect search forms from spam and malicious bots. This feature is optional and can be enabled or disabled from the plugin's settings page.
+
+* **Service:** Google reCAPTCHA v3
+* **What Data is Sent:** When a user submits a search form and the reCAPTCHA feature is enabled, the user's IP address and a reCAPTCHA token are sent to Google's servers for verification.
+* **Service's Terms and Policies:** For more information, please review Google's [Terms of Service](https://policies.google.com/terms) and [Privacy Policy](https://policies.google.com/privacy).
+
 == Screenshots ==
 
 1.  Halaman pengaturan utama untuk Pengaturan reCAPTCHA v3, Pengaturan Pemblokiran Kata.
