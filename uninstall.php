@@ -11,7 +11,7 @@ if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
     exit;
 }
 
-$option_name = 'sph_settings';
+$option_name = 'search_protect_settings';
 $settings    = get_option( $option_name );
 
 // Check if the user has opted in to delete data on uninstall.
@@ -22,7 +22,7 @@ if ( ! empty( $settings['delete_on_uninstall'] ) && '1' === $settings['delete_on
 
     // Drop the custom database log table.
     global $wpdb;
-    $log_table = $wpdb->prefix . 'sph_logs';
+    $log_table = $wpdb->prefix . 'search_protect_logs';
     // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.NoCaching
     $wpdb->query( "DROP TABLE IF EXISTS {$log_table}" );
 }
