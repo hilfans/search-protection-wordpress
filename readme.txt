@@ -4,7 +4,7 @@ Contributors: hilfans0
 Tags: search, security, block, spam, protection
 Requires at least: 5.0
 Tested up to: 6.8
-Stable tag: 1.4.0
+Stable tag: 1.4.1
 Requires PHP: 7.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
