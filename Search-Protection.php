@@ -3,7 +3,7 @@
  * Plugin Name: Search Protection
  * Plugin URI: https://github.com/hilfans/search-protection-wordpress
  * Description: Lindungi form pencarian dari spam dan karakter berbahaya dengan daftar hitam dan reCAPTCHA v3.
- * Version: 1.4.0
+ * Version: 1.4.1
  * Requires at least: 5.0
  * Requires PHP: 7.2
  * Author: <a href="https://msp.web.id" target="_blank">Hilfan</a>
@@ -15,15 +15,15 @@
 
 if (!defined('ABSPATH')) exit; // Exit if accessed directly
 
-class SPH_Search_Protection {
-    private $option_name = 'sph_settings';
+class Search_Protect_Protection {
+    private $option_name = 'search_protect_settings';
     private $log_table;
-    private $cron_hook_name = 'sph_daily_log_cleanup';
+    private $cron_hook_name = 'search_protect_daily_log_cleanup';
     private $plugin_version;
 
     public function __construct() {
         global $wpdb;
-        $this->log_table = $wpdb->prefix . 'sph_logs';
+        $this->log_table = $wpdb->prefix . 'search_protect_logs';
         
         if ( ! function_exists( 'get_plugin_data' ) ) {
             require_once( ABSPATH . 'wp-admin/includes/plugin.php' );
@@ -59,7 +59,7 @@ class SPH_Search_Protection {
     }
 
     public function plugin_settings_link($links) {
-        $settings_link = '<a href="options-general.php?page=search-protection-settings">Settings</a>';
+        $settings_link = '<a href="options-general.php?page=search-protect-settings">Settings</a>';
         array_unshift($links, $settings_link);
         return $links;
     }
@@ -69,14 +69,14 @@ class SPH_Search_Protection {
             'Search Protection Settings',
             'Search Protection',
             'manage_options',
-            'search-protection-settings',
+            'search-protect-settings',
             [$this, 'settings_page_html']
         );
     }
 
     public function register_settings() {
         register_setting(
-            'sph_settings_group',
+            'search_protect_settings_group',
             $this->option_name,
             [$this, 'sanitize_settings']
         );
@@ -111,7 +111,7 @@ class SPH_Search_Protection {
             'msg_regex' => 'Pencarian diblokir karena mengandung pola karakter yang tidak diizinkan.',
             'block_page_url' => '',
             'delete_on_uninstall' => '0',
-            'enable_auto_log_cleanup' => '1', // Default to ON to maintain behavior for existing users
+            'enable_auto_log_cleanup' => '1',
         ];
     }
 
@@ -122,7 +122,7 @@ class SPH_Search_Protection {
         $saved_options = get_option($this->option_name);
         $options = wp_parse_args($saved_options, $defaults);
 
-        $cache_key = 'sph_recent_keywords';
+        $cache_key = 'search_protect_recent_keywords';
         $recent_keywords = wp_cache_get($cache_key, 'search_protection');
 
         if (false === $recent_keywords) {
@@ -145,7 +145,7 @@ class SPH_Search_Protection {
         ?>
         <div class="wrap">
             <h1>Search Protection Settings</h1>
-            <?php settings_errors('sph_notices'); ?>
+            <?php settings_errors('search_protect_notices'); ?>
             <p>Plugin ini membantu melindungi form pencarian Anda dari kata-kata yang tidak diinginkan dan spam menggunakan reCAPTCHA v3.</p>
 
             <h2>Informasi Kata Kunci Terblokir (24 Jam Terakhir)</h2>
@@ -176,7 +176,7 @@ class SPH_Search_Protection {
             <?php endif; ?>
 
             <form method="post" action="options.php">
-                <?php settings_fields('sph_settings_group'); ?>
+                <?php settings_fields('search_protect_settings_group'); ?>
 
                 <h2>Pengaturan reCAPTCHA v3</h2>
                 <table class="form-table">
@@ -264,8 +264,8 @@ class SPH_Search_Protection {
                 <div style="flex: 1; min-width: 300px;">
                     <p>Simpan semua konfigurasi plugin di atas ke dalam sebuah file .json.</p>
                     <form method="post">
-                        <input type="hidden" name="sph_action" value="export_settings" />
-                        <?php wp_nonce_field('sph_export_nonce', 'sph_export_nonce_field'); ?>
+                        <input type="hidden" name="search_protect_action" value="export_settings" />
+                        <?php wp_nonce_field('search_protect_export_nonce', 'search_protect_export_nonce_field'); ?>
                         <?php submit_button('Cadangkan Pengaturan', 'secondary', 'submit', false); ?>
                     </form>
                 </div>
@@ -276,8 +276,8 @@ class SPH_Search_Protection {
                             <label for="import_file">Pilih File Cadangan (.json):</label><br>
                             <input type="file" id="import_file" name="import_file" accept=".json" required>
                         </p>
-                        <input type="hidden" name="sph_action" value="import_settings" />
-                        <?php wp_nonce_field('sph_import_nonce', 'sph_import_nonce_field'); ?>
+                        <input type="hidden" name="search_protect_action" value="import_settings" />
+                        <?php wp_nonce_field('search_protect_import_nonce', 'search_protect_import_nonce_field'); ?>
                         <?php submit_button('Impor & Pulihkan Pengaturan', 'primary', 'submit', false); ?>
                     </form>
                 </div>
@@ -287,23 +287,23 @@ class SPH_Search_Protection {
     }
     
     public function process_settings_actions() {
-        if (empty($_POST['sph_action'])) {
+        if (empty($_POST['search_protect_action'])) {
             return;
         }
 
-        $action = sanitize_text_field(wp_unslash($_POST['sph_action']));
+        $action = sanitize_text_field(wp_unslash($_POST['search_protect_action']));
         
         if ($action === 'export_settings') {
-            $nonce = isset($_POST['sph_export_nonce_field']) ? sanitize_text_field(wp_unslash($_POST['sph_export_nonce_field'])) : '';
-            if (!wp_verify_nonce($nonce, 'sph_export_nonce')) {
+            $nonce = isset($_POST['search_protect_export_nonce_field']) ? sanitize_text_field(wp_unslash($_POST['search_protect_export_nonce_field'])) : '';
+            if (!wp_verify_nonce($nonce, 'search_protect_export_nonce')) {
                 wp_die('Pemeriksaan keamanan gagal!');
             }
             $this->export_settings();
         }
 
         if ($action === 'import_settings') {
-            $nonce = isset($_POST['sph_import_nonce_field']) ? sanitize_text_field(wp_unslash($_POST['sph_import_nonce_field'])) : '';
-            if (!wp_verify_nonce($nonce, 'sph_import_nonce')) {
+            $nonce = isset($_POST['search_protect_import_nonce_field']) ? sanitize_text_field(wp_unslash($_POST['search_protect_import_nonce_field'])) : '';
+            if (!wp_verify_nonce($nonce, 'search_protect_import_nonce')) {
                 wp_die('Pemeriksaan keamanan gagal!');
             }
             $this->import_settings();
@@ -321,11 +321,7 @@ class SPH_Search_Protection {
         header('Content-Type: application/json');
         header('Content-Disposition: attachment; filename=' . $filename);
         
-        ob_clean();
-        flush();
-        
-        echo json_encode($settings, JSON_PRETTY_PRINT);
-        exit;
+        wp_send_json($settings, 200);
     }
 
     private function import_settings() {
@@ -333,14 +329,14 @@ class SPH_Search_Protection {
             wp_die('Anda tidak memiliki izin untuk melakukan tindakan ini.');
         }
 
-        $nonce = isset($_POST['sph_import_nonce_field']) ? sanitize_text_field(wp_unslash($_POST['sph_import_nonce_field'])) : '';
-        if (!wp_verify_nonce($nonce, 'sph_import_nonce')) {
-            add_settings_error('sph_notices', 'import_error', 'Pemeriksaan keamanan gagal.', 'error');
+        $nonce = isset($_POST['search_protect_import_nonce_field']) ? sanitize_text_field(wp_unslash($_POST['search_protect_import_nonce_field'])) : '';
+        if (!wp_verify_nonce($nonce, 'search_protect_import_nonce')) {
+            add_settings_error('search_protect_notices', 'import_error', 'Pemeriksaan keamanan gagal.', 'error');
             return;
         }
         
         if (empty($_FILES['import_file']) || empty($_FILES['import_file']['tmp_name'])) {
-            add_settings_error('sph_notices', 'import_error', 'Tidak ada file yang dipilih untuk diimpor.', 'error');
+            add_settings_error('search_protect_notices', 'import_error', 'Tidak ada file yang dipilih untuk diimpor.', 'error');
             return;
         }
 
@@ -348,13 +344,14 @@ class SPH_Search_Protection {
         $file = $_FILES['import_file'];
 
         if ($file['error'] !== UPLOAD_ERR_OK) {
-            add_settings_error('sph_notices', 'import_error', 'Terjadi kesalahan saat mengunggah file.', 'error');
+            add_settings_error('search_protect_notices', 'import_error', 'Terjadi kesalahan saat mengunggah file.', 'error');
             return;
         }
 
-        $extension = pathinfo($file['name'], PATHINFO_EXTENSION);
+        $file_name = sanitize_file_name($file['name']);
+        $extension = pathinfo($file_name, PATHINFO_EXTENSION);
         if ($extension !== 'json') {
-            add_settings_error('sph_notices', 'import_error', 'File tidak valid. Harap unggah file cadangan .json yang benar.', 'error');
+            add_settings_error('search_protect_notices', 'import_error', 'File tidak valid. Harap unggah file cadangan .json yang benar.', 'error');
             return;
         }
 
@@ -363,14 +360,14 @@ class SPH_Search_Protection {
         $imported_settings = json_decode($content, true);
 
         if (json_last_error() !== JSON_ERROR_NONE) {
-            add_settings_error('sph_notices', 'import_error', 'Gagal membaca file cadangan. File JSON tidak valid.', 'error');
+            add_settings_error('search_protect_notices', 'import_error', 'Gagal membaca file cadangan. File JSON tidak valid.', 'error');
             return;
         }
         
         $sanitized_settings = $this->sanitize_settings($imported_settings);
         update_option($this->option_name, $sanitized_settings);
 
-        add_settings_error('sph_notices', 'import_success', 'Pengaturan berhasil diimpor dan disimpan.', 'success');
+        add_settings_error('search_protect_notices', 'import_success', 'Pengaturan berhasil diimpor dan disimpan.', 'success');
     }
 
     public function create_log_table() {
@@ -405,7 +402,7 @@ class SPH_Search_Protection {
             );
             // phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 
-            wp_cache_delete('sph_recent_keywords', 'search_protection');
+            wp_cache_delete('search_protect_recent_keywords', 'search_protection');
         }
     }
 
@@ -533,7 +530,7 @@ class SPH_Search_Protection {
             'user_ip'        => $user_ip
         ]);
 
-        wp_cache_delete('sph_recent_keywords', 'search_protection');
+        wp_cache_delete('search_protect_recent_keywords', 'search_protection');
 
         $options = wp_parse_args(get_option($this->option_name), $this->get_default_settings());
         $block_page_url = $options['block_page_url'] ?? '';
@@ -555,7 +552,7 @@ class SPH_Search_Protection {
 
     public function admin_notices() {
         $screen = get_current_screen();
-        if ($screen && $screen->id === 'settings_page_search-protection-settings') {
+        if ($screen && $screen->id === 'settings_page_search-protect-settings') {
             echo '<div class="notice notice-info is-dismissible"><p>Pastikan Anda telah mendaftarkan domain Anda di <a href="https://www.google.com/recaptcha/admin" target="_blank">Google reCAPTCHA (v3)</a> untuk mendapatkan Site Key dan Secret Key.</p></div>';
             
             $options = wp_parse_args(get_option($this->option_name), $this->get_default_settings());
@@ -566,4 +563,4 @@ class SPH_Search_Protection {
     }
 }
 
-new SPH_Search_Protection();
+new Search_Protect_Protection();
