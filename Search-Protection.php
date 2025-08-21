@@ -3,7 +3,7 @@
  * Plugin Name: Search Protection
  * Plugin URI: https://github.com/hilfans/search-protection-wordpress
  * Description: Lindungi form pencarian dari spam dan karakter berbahaya dengan daftar hitam dan reCAPTCHA v3.
- * Version: 1.4.1
+ * Version: 1.4.2
  * Requires at least: 5.0
  * Requires PHP: 7.2
  * Author: <a href="https://msp.web.id" target="_blank">Hilfan</a>
@@ -19,19 +19,14 @@ class Search_Protect_Protection {
     private $option_name = 'search_protect_settings';
     private $log_table;
     private $cron_hook_name = 'search_protect_daily_log_cleanup';
-    private $plugin_version;
+    private $plugin_version = '1.4.2'; // Default version
 
     public function __construct() {
         global $wpdb;
         $this->log_table = $wpdb->prefix . 'search_protect_logs';
         
-        if ( ! function_exists( 'get_plugin_data' ) ) {
-            require_once( ABSPATH . 'wp-admin/includes/plugin.php' );
-        }
-        $plugin_data = get_plugin_data( __FILE__ );
-        $this->plugin_version = $plugin_data['Version'];
-
         // Main Hooks
+        add_action('plugins_loaded', [$this, 'setup_plugin']);
         add_action('admin_menu', [$this, 'add_settings_page']);
         add_action('admin_init', [$this, 'register_settings']);
         add_action('pre_get_posts', [$this, 'intercept_search_query']);
@@ -44,6 +39,17 @@ class Search_Protect_Protection {
         register_activation_hook(__FILE__, [$this, 'activate']);
         register_deactivation_hook(__FILE__, [$this, 'deactivate']);
         add_action($this->cron_hook_name, [$this, 'do_daily_log_cleanup']);
+    }
+
+    /**
+     * Setup plugin properties that might trigger early translation.
+     */
+    public function setup_plugin() {
+        if ( ! function_exists( 'get_plugin_data' ) ) {
+            require_once( ABSPATH . 'wp-admin/includes/plugin.php' );
+        }
+        $plugin_data = get_plugin_data( __FILE__ );
+        $this->plugin_version = $plugin_data['Version'];
     }
 
     public function activate() {
