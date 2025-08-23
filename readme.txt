@@ -4,7 +4,7 @@ Contributors: hilfans0
 Tags: search, security, block, spam, protection
 Requires at least: 5.0
 Tested up to: 6.8
-Stable tag: 1.4.2
+Stable tag: 1.4.4
 Requires PHP: 7.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -51,6 +51,10 @@ Plugin ini terintegrasi dengan layanan Google reCAPTCHA v3 untuk melindungi form
 3.  Menu pengaturan utama untuk Cadangkan & Pulihkan Pengaturan. 
 
 == Changelog ==
+= 1.4.4 (23 Agustus 2025) =
+* PENINGKATAN KEPATUHAN: Mengubah semua prefix internal plugin.
+* PENINGKATAN KEAMANAN: Menambahkan validasi `is_uploaded_file()` untuk memastikan file impor adalah file unggahan yang sah sebelum diproses.
+* CATATAN PENTING: Karena perubahan prefix internal yang signifikan, semua pengaturan plugin akan direset setelah melakukan update ke versi ini. Harap lakukan konfigurasi ulang atau pulihkan dari cadangan.
 
 = 1.4.2 (22 Agustus 2025) =
 * PERBAIKAN: Memperbaiki notifikasi debug `Translation loading... triggered too early` dengan menunda inisialisasi versi plugin ke hook `plugins_loaded`. Ini memastikan kompatibilitas dengan WordPress versi terbaru dan praktik terbaik pemuatan terjemahan.
