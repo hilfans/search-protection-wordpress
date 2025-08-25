@@ -3,7 +3,7 @@
  * Plugin Name: Search Protection
  * Plugin URI: https://github.com/hilfans/search-protection-wordpress
  * Description: Lindungi form pencarian dari spam dan karakter berbahaya dengan daftar hitam dan reCAPTCHA v3.
- * Version: 1.4.4
+ * Version: 1.4.6
  * Requires at least: 5.0
  * Requires PHP: 7.2
  * Author: <a href="https://msp.web.id" target="_blank">Hilfan</a>
@@ -19,13 +19,14 @@ class Ebmsp_SProtect_Protection {
     private $option_name = 'ebmsp_sprotect_settings';
     private $log_table;
     private $cron_hook_name = 'ebmsp_sprotect_daily_log_cleanup';
-    private $plugin_version;
+    private $plugin_version = '1.4.6'; // Default version
 
     public function __construct() {
         global $wpdb;
         $this->log_table = $wpdb->prefix . 'ebmsp_sprotect_logs';
         
-        add_action('plugins_loaded', [$this, 'setup_plugin']);
+        // FIX: Changed hook from 'plugins_loaded' to 'init' to prevent early translation loading.
+        add_action('init', [$this, 'setup_plugin']);
         add_action('admin_menu', [$this, 'add_settings_page']);
         add_action('admin_init', [$this, 'register_settings']);
         add_action('pre_get_posts', [$this, 'intercept_search_query']);
@@ -112,7 +113,7 @@ class Ebmsp_SProtect_Protection {
             'msg_regex' => 'Pencarian diblokir karena mengandung pola karakter yang tidak diizinkan.',
             'block_page_url' => '',
             'delete_on_uninstall' => '0',
-            'enable_auto_log_cleanup' => '0', // FIX: Set default to OFF (unchecked)
+            'enable_auto_log_cleanup' => '0',
         ];
     }
 
