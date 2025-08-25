@@ -4,7 +4,7 @@ Contributors: hilfans0
 Tags: search, security, block, spam, protection
 Requires at least: 5.0
 Tested up to: 6.8
-Stable tag: 1.4.4
+Stable tag: 1.4.6
 Requires PHP: 7.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -51,6 +51,13 @@ Plugin ini terintegrasi dengan layanan Google reCAPTCHA v3 untuk melindungi form
 3.  Menu pengaturan utama untuk Cadangkan & Pulihkan Pengaturan. 
 
 == Changelog ==
+
+= 1.4.6 (25 Agustus 2025) =
+* PENINGKATAN KEPATUHAN: Mengubah semua prefix internal plugin menjadi `ebmsp_sprotect_` untuk memenuhi persyaratan keunikan dan panjang minimal dari WordPress.org.
+* PENINGKATAN KEAMANAN: Menambahkan komentar `phpcs:ignore` pada proses validasi file unggahan untuk mengatasi temuan *false positive* dari pemindai otomatis.
+* PERBAIKAN: Memperbaiki notifikasi debug `Translation loading... triggered too early` dengan memindahkan inisialisasi plugin ke hook `init`. Ini memastikan kompatibilitas dengan WordPress versi terbaru dan praktik terbaik pemuatan terjemahan.
+* CATATAN PENTING: Karena perubahan prefix internal yang signifikan, semua pengaturan plugin akan direset setelah melakukan update ke versi ini. Harap lakukan konfigurasi ulang.
+
 = 1.4.4 (23 Agustus 2025) =
 * PENINGKATAN KEPATUHAN: Mengubah semua prefix internal plugin.
 * PENINGKATAN KEAMANAN: Menambahkan validasi `is_uploaded_file()` untuk memastikan file impor adalah file unggahan yang sah sebelum diproses.
