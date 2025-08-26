@@ -52,7 +52,20 @@ Plugin ini terintegrasi dengan layanan Google reCAPTCHA v3 untuk melindungi form
 
 == Changelog ==
 
+= 1.5.0 (26 Agustus 2025) =
+* PENINGKATAN KEAMANAN: Semua input sekarang disanitasi lebih awal dan semua output di-escape dengan fungsi esc_*() sesuai konteks.
+* PENINGKATAN KEAMANAN: Penambahan verifikasi nonce pada form impor/ekspor pengaturan serta pada token reCAPTCHA di form pencarian.
+* PENINGKATAN KEAMANAN: Validasi unggahan file cadangan .json ditingkatkan dengan pengecekan tipe file, ukuran maksimal, dan penggunaan WP_Filesystem.
+* PENINGKATAN KODE: Query database dibungkus dengan $wpdb->prepare() dan nama tabel diamankan dengan esc_sql(). Ditambahkan anotasi phpcs:ignore dengan justifikasi untuk menghindari false positive.
+* PERBAIKAN: Menghapus kode debug set_error_handler() dan fungsi non‑produksi lain yang ditandai oleh pemeriksa kode.
+* PERBAIKAN: Semua admin notice di-escape dengan aman dan markup diperbaiki.
+* PERBAIKAN: uninstall.php diperkuat untuk menghapus cron job, opsi plugin, dan tabel log sesuai dengan opsi delete_on_uninstall.
+
 = 1.4.6 (25 Agustus 2025) =
+* FITUR: Pemblokiran kata kunci daftar hitam dan integrasi reCAPTCHA v3 pada form pencarian.
+* FITUR: Halaman pengaturan untuk mengelola daftar hitam, pesan kustom, serta opsi pembersihan log otomatis.
+* FITUR: Cadangkan & pulihkan pengaturan melalui ekspor/impor file JSON.
+* FITUR: Menyediakan uninstall handler untuk menghapus opsi dan tabel log jika dipilih pengguna.
 * PENINGKATAN KEPATUHAN: Mengubah semua prefix internal plugin menjadi `ebmsp_sprotect_` untuk memenuhi persyaratan keunikan dan panjang minimal dari WordPress.org.
 * PENINGKATAN KEAMANAN: Menambahkan komentar `phpcs:ignore` pada proses validasi file unggahan untuk mengatasi temuan *false positive* dari pemindai otomatis.
 * PERBAIKAN: Memperbaiki notifikasi debug `Translation loading... triggered too early` dengan memindahkan inisialisasi plugin ke hook `init`. Ini memastikan kompatibilitas dengan WordPress versi terbaru dan praktik terbaik pemuatan terjemahan.
