@@ -3,10 +3,10 @@
  * Plugin Name: Search Protection
  * Plugin URI: https://github.com/hilfans/search-protection-wordpress
  * Description: Lindungi form pencarian dari spam dan karakter berbahaya dengan daftar hitam dan reCAPTCHA v3.
- * Version: 1.5.0
+ * Version: 1.5.1
  * Requires at least: 5.0
  * Requires PHP: 7.2
- * Author: <a href="https://msp.web.id" target="_blank">Hilfan</a>
+ * Author: <a href="https://msp.web.id" target="_blank" rel="noopener">Hilfan</a>
  * Author URI:  https://msp.web.id/
  * License: GPLv2 or later
  * License URI:  https://www.gnu.org/licenses/gpl-2.0.html
@@ -21,7 +21,7 @@ class Ebmsp_SProtect_Protection {
 	private $option_name      = 'ebmsp_sprotect_settings';
 	private $log_table;
 	private $cron_hook_name   = 'ebmsp_sprotect_daily_log_cleanup';
-	private $plugin_version   = '1.5.0';
+	private $plugin_version   = '1.5.1';
 
 	public function __construct() {
 		global $wpdb;
@@ -70,7 +70,7 @@ class Ebmsp_SProtect_Protection {
 
 	public function add_settings_page() {
 		add_options_page(
-			' Search Protection Settings',
+			'Search Protection Settings',
 			esc_html__( 'Search Protection', 'search-protection' ),
 			'manage_options',
 			'ebmsp-sprotect-settings',
@@ -181,7 +181,7 @@ class Ebmsp_SProtect_Protection {
 				<h2><?php echo esc_html__( 'Pengaturan reCAPTCHA v3', 'search-protection' ); ?></h2>
 				<table class="form-table">
 					<tr valign="top">
-						<th scope="row"></th>
+						<th scope="row"><?php echo esc_html__( 'Aktifkan reCAPTCHA', 'search-protection' ); ?></th>
 						<td>
 							<label for="enable_recaptcha">
 								<input type="checkbox" id="enable_recaptcha" name="<?php echo esc_attr( $this->option_name ); ?>[enable_recaptcha]" value="1" <?php checked( '1', $options['enable_recaptcha'] ); ?>>
@@ -238,7 +238,7 @@ class Ebmsp_SProtect_Protection {
 				<h2><?php echo esc_html__( 'Manajemen Data', 'search-protection' ); ?></h2>
 				<table class="form-table">
 					<tr valign="top">
-						<th scope="row">Hapus Log Otomatis</th>
+						<th scope="row"><?php echo esc_html__( 'Hapus Log Otomatis', 'search-protection' ); ?></th>
 						<td>
 							<label for="enable_auto_log_cleanup">
 								<input type="checkbox" id="enable_auto_log_cleanup" name="<?php echo esc_attr( $this->option_name ); ?>[enable_auto_log_cleanup]" value="1" <?php checked( '1', $options['enable_auto_log_cleanup'] ); ?>>
@@ -247,7 +247,7 @@ class Ebmsp_SProtect_Protection {
 						</td>
 					</tr>
 					<tr valign="top">
-						<th scope="row">Hapus Data Saat Uninstall</th>
+						<th scope="row"><?php echo esc_html__( 'Hapus Data Saat Uninstall', 'search-protection' ); ?></th>
 						<td>
 							<label for="delete_on_uninstall">
 								<input type="checkbox" id="delete_on_uninstall" name="<?php echo esc_attr( $this->option_name ); ?>[delete_on_uninstall]" value="1" <?php checked( '1', $options['delete_on_uninstall'] ); ?>>
@@ -291,12 +291,14 @@ class Ebmsp_SProtect_Protection {
 	}
 
 	public function process_settings_actions() {
+		// phpcs:disable WordPress.Security.NonceVerification.Missing
+		// Nonce is checked conditionally based on the action, which is a safe pattern but flags the linter.
+		// Disabling for this function is the standard approach for multi-action forms.
 		$request_method = (string) ( filter_input( INPUT_SERVER, 'REQUEST_METHOD', FILTER_SANITIZE_FULL_SPECIAL_CHARS ) );
 		if ( 'POST' !== $request_method ) {
 			return;
 		}
 
-		// Stop early unless action exists, nonce verified, and user capable.
 		$action = (string) ( filter_input( INPUT_POST, 'ebmsp_sprotect_action', FILTER_SANITIZE_FULL_SPECIAL_CHARS ) );
 		if ( '' === $action ) {
 			return;
@@ -316,6 +318,7 @@ class Ebmsp_SProtect_Protection {
 			$this->import_settings();
 			return;
 		}
+		// phpcs:enable WordPress.Security.NonceVerification.Missing
 	}
 
 	private function export_settings() {
@@ -482,7 +485,7 @@ class Ebmsp_SProtect_Protection {
 
 			$nonce = (string) ( filter_input( INPUT_POST, 'ebmsp_sprotect_nonce', FILTER_SANITIZE_FULL_SPECIAL_CHARS ) );
 			if ( empty( $nonce ) || ! wp_verify_nonce( $nonce, 'ebmsp_sprotect_search' ) ) {
-				return; // nonce invalid -> jangan proses token
+				return;
 			}
 
 			$token = (string) ( filter_input( INPUT_POST, 'token', FILTER_SANITIZE_FULL_SPECIAL_CHARS ) );
@@ -619,7 +622,7 @@ class Ebmsp_SProtect_Protection {
 		}
 		$screen = get_current_screen();
 		if ( ! $screen || ! isset( $screen->id ) || 'settings_page_ebmsp-sprotect-settings' !== $screen->id ) {
-			return; // hanya tampil di halaman Settings plugin kita
+			return;
 		}
 
 		$recaptcha_url = 'https://www.google.com/recaptcha/admin';
