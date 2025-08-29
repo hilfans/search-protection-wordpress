@@ -4,7 +4,7 @@ Contributors: hilfans0
 Tags: search, security, block, spam, protection
 Requires at least: 5.0
 Tested up to: 6.8
-Stable tag: 1.5.0
+Stable tag: 1.5.3
 Requires PHP: 7.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -52,6 +52,11 @@ Plugin ini terintegrasi dengan layanan Google reCAPTCHA v3 untuk melindungi form
 
 == Changelog ==
 
+= 1.5.3 (29 Agustus 2025) =
+* PENINGKATAN KEAMANAN: Memperbaiki logika verifikasi nonce pada fitur impor/ekspor untuk memastikan semua data form ($_POST, $_FILES) divalidasi dengan benar sebelum diproses.
+* PERBAIKAN: Menghilangkan semua peringatan NonceVerification.Missing dan InputNotValidated yang dilaporkan oleh alat pemeriksa plugin.
+* PENINGKATAN KODE: Memindahkan logika keamanan (verifikasi nonce dan hak akses) ke dalam fungsi-fungsi yang relevan (export_settings dan import_settings) untuk meningkatkan keterbacaan dan keamanan kode.
+
 = 1.5.0 (26 Agustus 2025) =
 * PENINGKATAN KEAMANAN: Semua input sekarang disanitasi lebih awal dan semua output di-escape dengan fungsi esc_*() sesuai konteks.
 * PENINGKATAN KEAMANAN: Penambahan verifikasi nonce pada form impor/ekspor pengaturan serta pada token reCAPTCHA di form pencarian.
@@ -66,9 +71,9 @@ Plugin ini terintegrasi dengan layanan Google reCAPTCHA v3 untuk melindungi form
 * FITUR: Halaman pengaturan untuk mengelola daftar hitam, pesan kustom, serta opsi pembersihan log otomatis.
 * FITUR: Cadangkan & pulihkan pengaturan melalui ekspor/impor file JSON.
 * FITUR: Menyediakan uninstall handler untuk menghapus opsi dan tabel log jika dipilih pengguna.
-* PENINGKATAN KEPATUHAN: Mengubah semua prefix internal plugin menjadi `ebmsp_sprotect_` untuk memenuhi persyaratan keunikan dan panjang minimal dari WordPress.org.
-* PENINGKATAN KEAMANAN: Menambahkan komentar `phpcs:ignore` pada proses validasi file unggahan untuk mengatasi temuan *false positive* dari pemindai otomatis.
-* PERBAIKAN: Memperbaiki notifikasi debug `Translation loading... triggered too early` dengan memindahkan inisialisasi plugin ke hook `init`. Ini memastikan kompatibilitas dengan WordPress versi terbaru dan praktik terbaik pemuatan terjemahan.
+* PENINGKATAN KEPATUHAN: Mengubah semua prefix internal plugin menjadi ebmsp_sprotect_ untuk memenuhi persyaratan keunikan dan panjang minimal dari WordPress.org.
+* PENINGKATAN KEAMANAN: Menambahkan komentar phpcs:ignore pada proses validasi file unggahan untuk mengatasi temuan false positive dari pemindai otomatis.
+* PERBAIKAN: Memperbaiki notifikasi debug Translation loading... triggered too early dengan memindahkan inisialisasi plugin ke hook init. Ini memastikan kompatibilitas dengan WordPress versi terbaru dan praktik terbaik pemuatan terjemahan.
 * CATATAN PENTING: Karena perubahan prefix internal yang signifikan, semua pengaturan plugin akan direset setelah melakukan update ke versi ini. Harap lakukan konfigurasi ulang.
 
 = 1.4.4 (23 Agustus 2025) =
