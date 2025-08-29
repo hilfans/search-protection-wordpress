@@ -3,7 +3,7 @@
  * Plugin Name: Search Protection
  * Plugin URI: https://github.com/hilfans/search-protection-wordpress
  * Description: Lindungi form pencarian dari spam dan karakter berbahaya dengan daftar hitam dan reCAPTCHA v3.
- * Version: 1.5.1
+ * Version: 1.5.3
  * Requires at least: 5.0
  * Requires PHP: 7.2
  * Author: <a href="https://msp.web.id" target="_blank" rel="noopener">Hilfan</a>
@@ -21,7 +21,7 @@ class Ebmsp_SProtect_Protection {
 	private $option_name      = 'ebmsp_sprotect_settings';
 	private $log_table;
 	private $cron_hook_name   = 'ebmsp_sprotect_daily_log_cleanup';
-	private $plugin_version   = '1.5.1';
+	private $plugin_version   = '1.5.3';
 
 	public function __construct() {
 		global $wpdb;
@@ -291,39 +291,35 @@ class Ebmsp_SProtect_Protection {
 	}
 
 	public function process_settings_actions() {
-		// phpcs:disable WordPress.Security.NonceVerification.Missing
-		// Nonce is checked conditionally based on the action, which is a safe pattern but flags the linter.
-		// Disabling for this function is the standard approach for multi-action forms.
-		$request_method = (string) ( filter_input( INPUT_SERVER, 'REQUEST_METHOD', FILTER_SANITIZE_FULL_SPECIAL_CHARS ) );
-		if ( 'POST' !== $request_method ) {
+		// First, check if our action hidden field is set. If not, this isn't our form.
+		// We can safely check for the key existence before nonce verification.
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing
+		if ( ! isset( $_POST['ebmsp_sprotect_action'] ) ) {
 			return;
 		}
 
-		$action = (string) ( filter_input( INPUT_POST, 'ebmsp_sprotect_action', FILTER_SANITIZE_FULL_SPECIAL_CHARS ) );
-		if ( '' === $action ) {
-			return;
-		}
-		if ( ! current_user_can( 'manage_options' ) ) {
-			return;
-		}
+		// Sanitize the action to determine which function to call.
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing
+		$action = sanitize_text_field( wp_unslash( $_POST['ebmsp_sprotect_action'] ) );
 
+		// Route to the correct handler. The handler is now responsible
+		// for its own security checks (nonce, capabilities).
 		if ( 'export_settings' === $action ) {
-			check_admin_referer( 'ebmsp_sprotect_export', 'ebmsp_sprotect_export_nonce' );
 			$this->export_settings();
 			return;
 		}
 
 		if ( 'import_settings' === $action ) {
-			check_admin_referer( 'ebmsp_sprotect_import', 'ebmsp_sprotect_import_nonce' );
 			$this->import_settings();
 			return;
 		}
-		// phpcs:enable WordPress.Security.NonceVerification.Missing
 	}
 
 	private function export_settings() {
+		// Security checks are now inside this function.
+		check_admin_referer( 'ebmsp_sprotect_export', 'ebmsp_sprotect_export_nonce' );
 		if ( ! current_user_can( 'manage_options' ) ) {
-			return;
+			wp_die( esc_html__( 'Anda tidak memiliki izin untuk melakukan tindakan ini.', 'search-protection' ) );
 		}
 
 		$settings = get_option( $this->option_name );
@@ -341,11 +337,13 @@ class Ebmsp_SProtect_Protection {
 	}
 
 	private function import_settings() {
+		// Security checks are now the first thing in this function, before accessing any superglobals.
+		check_admin_referer( 'ebmsp_sprotect_import', 'ebmsp_sprotect_import_nonce' );
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_die( esc_html__( 'Anda tidak memiliki izin untuk melakukan tindakan ini.', 'search-protection' ) );
 		}
 
-		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+		// Now that security is verified, we can safely access $_FILES.
 		if ( empty( $_FILES['import_file'] ) || empty( $_FILES['import_file']['tmp_name'] ) ) {
 			add_settings_error( 'ebmsp_sprotect_notices', 'import_error', esc_html__( 'Tidak ada file yang dipilih atau file tidak valid.', 'search-protection' ), 'error' );
 			return;
