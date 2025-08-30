@@ -52,6 +52,9 @@ Plugin ini terintegrasi dengan layanan Google reCAPTCHA v3 untuk melindungi form
 
 == Changelog ==
 
+​= 1.5.5 (30 Agustus 2025) =
+​PENINGKATAN KEAMANAN: Memperketat validasi pada file yang diunggah dengan menambahkan pengecekan isset() pada $_FILES['import_file']['error'] untuk menghilangkan peringatan InputNotValidated dari alat pemeriksa plugin.
+
 = 1.5.3 (29 Agustus 2025) =
 * PENINGKATAN KEAMANAN: Memperbaiki logika verifikasi nonce pada fitur impor/ekspor untuk memastikan semua data form ($_POST, $_FILES) divalidasi dengan benar sebelum diproses.
 * PERBAIKAN: Menghilangkan semua peringatan NonceVerification.Missing dan InputNotValidated yang dilaporkan oleh alat pemeriksa plugin.
