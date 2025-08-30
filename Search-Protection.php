@@ -3,7 +3,7 @@
  * Plugin Name: Search Protection
  * Plugin URI: https://github.com/hilfans/search-protection-wordpress
  * Description: Lindungi form pencarian dari spam dan karakter berbahaya dengan daftar hitam dan reCAPTCHA v3.
- * Version: 1.5.3
+ * Version: 1.5.5
  * Requires at least: 5.0
  * Requires PHP: 7.2
  * Author: <a href="https://msp.web.id" target="_blank" rel="noopener">Hilfan</a>
@@ -21,7 +21,7 @@ class Ebmsp_SProtect_Protection {
 	private $option_name      = 'ebmsp_sprotect_settings';
 	private $log_table;
 	private $cron_hook_name   = 'ebmsp_sprotect_daily_log_cleanup';
-	private $plugin_version   = '1.5.3';
+	private $plugin_version   = '1.5.5';
 
 	public function __construct() {
 		global $wpdb;
@@ -337,82 +337,77 @@ class Ebmsp_SProtect_Protection {
 	}
 
 	private function import_settings() {
-		// Security checks are now the first thing in this function, before accessing any superglobals.
 		check_admin_referer( 'ebmsp_sprotect_import', 'ebmsp_sprotect_import_nonce' );
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_die( esc_html__( 'Anda tidak memiliki izin untuk melakukan tindakan ini.', 'search-protection' ) );
 		}
+	
+		// More robust check for the uploaded file.
+		if ( ! isset( $_FILES['import_file'] ) || ! isset( $_FILES['import_file']['error'] ) ) {
+			add_settings_error( 'ebmsp_sprotect_notices', 'import_error', esc_html__( 'Tidak ada file yang dipilih atau terjadi kesalahan.', 'search-protection' ), 'error' );
+			return;
+		}
+		
+		if ( UPLOAD_ERR_OK !== $_FILES['import_file']['error'] ) {
+			add_settings_error( 'ebmsp_sprotect_notices', 'import_error', esc_html__( 'Terjadi kesalahan saat mengunggah file.', 'search-protection' ), 'error' );
+			return;
+		}
 
-		// Now that security is verified, we can safely access $_FILES.
-		if ( empty( $_FILES['import_file'] ) || empty( $_FILES['import_file']['tmp_name'] ) ) {
-			add_settings_error( 'ebmsp_sprotect_notices', 'import_error', esc_html__( 'Tidak ada file yang dipilih atau file tidak valid.', 'search-protection' ), 'error' );
+		if ( empty( $_FILES['import_file']['tmp_name'] ) ) {
+			add_settings_error( 'ebmsp_sprotect_notices', 'import_error', esc_html__( 'File sementara tidak ditemukan di server.', 'search-protection' ), 'error' );
 			return;
 		}
 
 		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
 		$file      = $_FILES['import_file'];
-		$tmp_name  = isset( $file['tmp_name'] ) ? $file['tmp_name'] : '';
-		$error     = isset( $file['error'] ) ? (int) $file['error'] : UPLOAD_ERR_OK;
-		$size      = isset( $file['size'] ) ? (int) $file['size'] : 0;
-		$orig_name = isset( $file['name'] ) ? (string) $file['name'] : '';
-
-		if ( UPLOAD_ERR_OK !== $error ) {
-			add_settings_error( 'ebmsp_sprotect_notices', 'import_error', esc_html__( 'Terjadi kesalahan saat mengunggah file.', 'search-protection' ), 'error' );
-			return;
-		}
-
+		$tmp_name  = $file['tmp_name'];
+		$size      = $file['size'];
+		$orig_name = $file['name'];
+	
 		if ( ! is_uploaded_file( $tmp_name ) ) {
 			add_settings_error( 'ebmsp_sprotect_notices', 'import_error', esc_html__( 'File upload tidak valid.', 'search-protection' ), 'error' );
 			return;
 		}
-
+	
 		if ( $size > 1024 * 1024 ) { // 1MB
 			add_settings_error( 'ebmsp_sprotect_notices', 'import_error', esc_html__( 'File terlalu besar. Maksimum 1MB.', 'search-protection' ), 'error' );
 			return;
 		}
-
-		$sanitized_name = sanitize_file_name( $orig_name );
-		require_once ABSPATH . 'wp-admin/includes/file.php';
-		$ft = wp_check_filetype_and_ext( $tmp_name, $sanitized_name, [ 'json' => 'application/json' ] );
-
-		$allowed_mimes = [ 'application/json', 'text/plain', 'application/octet-stream' ];
-		$ext_ok        = ( isset( $ft['ext'] ) && 'json' === $ft['ext'] );
-		$mime_ok       = ( isset( $ft['type'] ) && in_array( $ft['type'], $allowed_mimes, true ) );
-
-		if ( ! $ext_ok || ! $mime_ok ) {
+	
+		// More reliable validation: check the file extension directly.
+		$extension = strtolower( pathinfo( $orig_name, PATHINFO_EXTENSION ) );
+		if ( 'json' !== $extension ) {
 			add_settings_error( 'ebmsp_sprotect_notices', 'import_error', esc_html__( 'File tidak valid. Unggah file cadangan .json yang benar.', 'search-protection' ), 'error' );
 			return;
 		}
-
+	
 		global $wp_filesystem;
 		if ( ! $wp_filesystem ) {
 			WP_Filesystem();
 		}
-
+	
 		$content = '';
 		if ( $wp_filesystem && is_object( $wp_filesystem ) ) {
 			$content = $wp_filesystem->get_contents( $tmp_name );
 		}
-		if ( '' === $content || false === $content || null === $content ) {
-			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
-			$content = file_get_contents( $tmp_name );
-		}
-		if ( '' === $content || false === $content || null === $content ) {
-			add_settings_error( 'ebmsp_sprotect_notices', 'import_error', esc_html__( 'Gagal membaca file cadangan.', 'search-protection' ), 'error' );
+	
+		if ( empty( $content ) ) {
+			add_settings_error( 'ebmsp_sprotect_notices', 'import_error', esc_html__( 'Gagal membaca file cadangan atau file kosong.', 'search-protection' ), 'error' );
 			return;
 		}
-
+	
 		$imported_settings = json_decode( $content, true );
 		if ( JSON_ERROR_NONE !== json_last_error() || ! is_array( $imported_settings ) ) {
-			add_settings_error( 'ebmsp_sprotect_notices', 'import_error', esc_html__( 'File JSON tidak valid.', 'search-protection' ), 'error' );
+			add_settings_error( 'ebmsp_sprotect_notices', 'import_error', esc_html__( 'File JSON tidak valid atau isinya rusak.', 'search-protection' ), 'error' );
 			return;
 		}
-
+	
 		$sanitized_settings = $this->sanitize_settings( $imported_settings );
 		update_option( $this->option_name, $sanitized_settings );
-
+	
 		add_settings_error( 'ebmsp_sprotect_notices', 'import_success', esc_html__( 'Pengaturan berhasil diimpor dan disimpan.', 'search-protection' ), 'success' );
 	}
+	
 
 	public function create_log_table() {
 		global $wpdb;
