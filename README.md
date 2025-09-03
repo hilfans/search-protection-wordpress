@@ -1,6 +1,6 @@
 # Search Protection
 
-**Search Protection** adalah plugin WordPress yang menyediakan dua lapis pertahanan untuk form pencarian standar WordPress agar tetap aman dari serangan spam dan upaya pencarian berbahaya.
+**Search Protection** adalah plugin WordPress yang menyediakan dua lapis pertahanan untuk form pencarian standar WordPress agar tetap aman dari serangan spam dan upaya pencarian berbahaya, serta tidak memberatkan database.
 
 ## ✨ Fitur
 
@@ -9,6 +9,9 @@
 
 - **Google reCAPTCHA v3**  
   Verifikasi secara transparan apakah pengunjung adalah manusia atau bot, dan blokir permintaan yang mencurigakan tanpa mengganggu pengguna asli.
+
+- **Pemblokiran di awal**  
+  Sebelum pencarian mencari ke database, maka katakunci yang dicari dan masuk kedalam daftar hitam, maka akan langsung di blockirt, sehingga database tidak terbebani.
 
 Plugin ini dirancang agar mudah dikonfigurasi dan bekerja otomatis di latar belakang untuk menjaga situs Anda tetap aman.
 
