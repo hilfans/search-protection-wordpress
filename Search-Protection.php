@@ -3,10 +3,10 @@
  * Plugin Name: Search Protection
  * Plugin URI: https://github.com/hilfans/search-protection-wordpress
  * Description: Lindungi form pencarian dari spam dan karakter berbahaya dengan daftar hitam dan reCAPTCHA v3.
- * Version: 1.5.5
+ * Version: 1.5.9
  * Requires at least: 5.0
  * Requires PHP: 7.2
- * Author: <a href="https://msp.web.id" target="_blank" rel="noopener">Hilfan</a>
+ * Author: Digiwuz MSP, <a href="https://hilfan.staff.telkomuniversity.ac.id/" target="_blank" rel="noopener">Hilfan</a>, <a href="https://telkomuniversity.ac.id/" target="_blank" rel="noopener">Telkom University</a>
  * Author URI:  https://msp.web.id/
  * License: GPLv2 or later
  * License URI:  https://www.gnu.org/licenses/gpl-2.0.html
@@ -21,7 +21,7 @@ class Ebmsp_SProtect_Protection {
 	private $option_name      = 'ebmsp_sprotect_settings';
 	private $log_table;
 	private $cron_hook_name   = 'ebmsp_sprotect_daily_log_cleanup';
-	private $plugin_version   = '1.5.5';
+	private $plugin_version   = '1.5.9';
 
 	public function __construct() {
 		global $wpdb;
@@ -353,16 +353,17 @@ class Ebmsp_SProtect_Protection {
 			return;
 		}
 
-		if ( empty( $_FILES['import_file']['tmp_name'] ) ) {
-			add_settings_error( 'ebmsp_sprotect_notices', 'import_error', esc_html__( 'File sementara tidak ditemukan di server.', 'search-protection' ), 'error' );
+		// Sanitize and validate uploaded file data early, as recommended.
+		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- The tmp_name is a server path and is validated with is_uploaded_file() below.
+		$tmp_name  = isset( $_FILES['import_file']['tmp_name'] ) ? wp_unslash( $_FILES['import_file']['tmp_name'] ) : '';
+		$size      = isset( $_FILES['import_file']['size'] ) ? absint( $_FILES['import_file']['size'] ) : 0;
+		$orig_name = isset( $_FILES['import_file']['name'] ) ? sanitize_file_name( wp_unslash( $_FILES['import_file']['name'] ) ) : '';
+
+		// Further validation to ensure we have a valid file to process.
+		if ( empty( $tmp_name ) || empty( $orig_name ) ) {
+			add_settings_error( 'ebmsp_sprotect_notices', 'import_error', esc_html__( 'Data unggahan file tidak lengkap.', 'search-protection' ), 'error' );
 			return;
 		}
-
-		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
-		$file      = $_FILES['import_file'];
-		$tmp_name  = $file['tmp_name'];
-		$size      = $file['size'];
-		$orig_name = $file['name'];
 	
 		if ( ! is_uploaded_file( $tmp_name ) ) {
 			add_settings_error( 'ebmsp_sprotect_notices', 'import_error', esc_html__( 'File upload tidak valid.', 'search-protection' ), 'error' );
@@ -374,7 +375,7 @@ class Ebmsp_SProtect_Protection {
 			return;
 		}
 	
-		// More reliable validation: check the file extension directly.
+		// More reliable validation: check the file extension directly from the sanitized name.
 		$extension = strtolower( pathinfo( $orig_name, PATHINFO_EXTENSION ) );
 		if ( 'json' !== $extension ) {
 			add_settings_error( 'ebmsp_sprotect_notices', 'import_error', esc_html__( 'File tidak valid. Unggah file cadangan .json yang benar.', 'search-protection' ), 'error' );
@@ -399,6 +400,15 @@ class Ebmsp_SProtect_Protection {
 		$imported_settings = json_decode( $content, true );
 		if ( JSON_ERROR_NONE !== json_last_error() || ! is_array( $imported_settings ) ) {
 			add_settings_error( 'ebmsp_sprotect_notices', 'import_error', esc_html__( 'File JSON tidak valid atau isinya rusak.', 'search-protection' ), 'error' );
+			return;
+		}
+
+		// Validate the structure of the imported JSON to ensure all required keys are present.
+		$default_keys = array_keys( $this->get_default_settings() );
+		$missing_keys = array_diff( $default_keys, array_keys( $imported_settings ) );
+
+		if ( ! empty( $missing_keys ) ) {
+			add_settings_error( 'ebmsp_sprotect_notices', 'import_error', esc_html__( 'Struktur file JSON tidak valid. Pastikan semua parameter yang dibutuhkan ada di dalam file.', 'search-protection' ), 'error' );
 			return;
 		}
 	
